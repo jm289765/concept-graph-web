@@ -1,11 +1,6 @@
 import {jsPlumbBrowserUI} from "./modules/jsplumb.js"
 import {HttpRequests as requests} from "./httprequests.js";
 
-const gview = document.getElementById("graph-view")
-const instance = jsPlumbBrowserUI.newInstance({
-    container: gview
-})
-
 class NodeList {
     _nodeList = {} // dict<int, jsonData>
 
@@ -94,9 +89,11 @@ async function updateDisplayedNode(id=null) {
     if (node) {
         const titleInput = document.getElementById("title-input")
         const contentInput = document.getElementById("content-input")
+        const titleDisplay = document.getElementById("selected-node-view")
 
         titleInput.value = node["title"]
         contentInput.value = node["content"]
+        titleDisplay.innerText = node["title"]
     }
 }
 

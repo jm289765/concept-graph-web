@@ -1,62 +1,71 @@
 
 html {
+    height: 100%;
+    display: flex;
     background-color: lavender;
+    font-family: sans-serif;
+}
+
+body {
+    flex-grow: 1;
+    display: flex;
+    box-sizing: border-box;
+}
+
+#all-container {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: row;
 }
 
 #text-container {
-    width: 40vw;
-    float: left;
+    flex-grow: 2;
+    padding: 10px 10px 10px 10px;
+    max-width: 64%;
 }
 
-#graph-container {
-    height: 90vh;
-    width: 40vw;
-    margin: 20px 40px 20px 40px;
-    position: fixed;
-    right: 0;
-    float: right;
+#node-container {
+    flex-grow: 1;
+    margin: 20px 40px 20px 30px;
     box-shadow: rebeccapurple;
 }
 
-#graph-view {
+#node-view {
     height: 100%;
     width: 100%;
+    display: flex;
+    flex-direction: column;
     background-color: white;
     border: 5px outset darkmagenta;
     position: relative; /* position: relative is required by jsplumb https://docs.jsplumbtoolkit.com/community/#where-does-jsplumb-add-elements */
 }
 
-.graph-node {
-    z-index: 5;
-    position:absolute;
-    padding: 5px;
-    font-family: sans-serif;
-    border: 5px solid navy;
-    background-color: white;
+select {
+    border: 2px outset magenta;
+    padding: 10px 8px 10px 8px;
+    flex-grow: 1;
+    margin: 10px 10px 10px 10px;
 }
 
-.graph-node[data-ntype="concept"] {
-    z-index: 20;
-    color: #220022;
-    border-color: magenta;
+option {
+    border-style: solid solid none solid;
+    border-width: 1px;
+    border-color: #f0d0f0;
 }
 
-.graph-node[data-ntype="explanation"] {
-    z-index: 15;
-    border-color: darkorange;
+#upper-select {
+    margin-top: 20px;
 }
 
-.graph-node[data-ntype="comment"] {
-    z-index: 10;
-    border-color: darkgray;
-    background-color: #eeeeee;
+#selected-node-view {
+    margin: 50px 10px 50px 10px;
+    height: 40px;
+    border: 3px inset darkmagenta;
+    text-align: center;
+    padding: 5px 10px 5px 10px;
+
 }
 
-.graph-node:hover {
-    z-index: 50
-}
-
-.jtk-drag {
-    /* always overridden by .graph-node[data-ntype="..."] */
-    z-index: 100;
+#lower-select {
+    margin-bottom: 20px
 }

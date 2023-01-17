@@ -9,7 +9,55 @@
 <script type="module" src="main.js"></script>
 <script type="module" src="httprequests.js"></script>
 <link rel="stylesheet" href="styles.css" type="text/css">
-<div id="text-container">
+<div id="all-container">
+    <div id="node-container">
+        <div id="node-view">
+            <label for="upper-select"></label>
+            <select id="upper-select" size="3">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+            </select>
+            <div id="selected-node-view">Selected</div>
+            <label for="lower-select"></label>
+            <select id="lower-select" size="3">
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+            </select>
+        </div>
+    </div>
+    <div id="text-container">
     <p>
         <label for="node-input">Selected Node</label>
         <input id="node-input">
@@ -28,12 +76,6 @@
     <button id="add-node-button">Add a node</button>
     <p id="add-node-text">Added node ID goes here</p>
 </div>
-<div id="graph-container">
-    <div id="graph-view">
-        <div class="graph-node" data-ntype="concept" id="concept-node-template">Concept Node</div>
-        <div class="graph-node" data-ntype="explanation" id="explanation-node-template">Explanation Node</div>
-        <div class="graph-node" data-ntype="comment" id="comment-node-template">Comment Node</div>
-    </div>
 </div>
 </body>
 </html>
