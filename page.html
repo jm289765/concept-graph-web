@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph Web App</title>
+</head>
+<body>
+<script type="module" src="modules/jsplumb.js"></script>
+<script type="module" src="main.js"></script>
+<script type="module" src="httprequests.js"></script>
+<link rel="stylesheet" href="styles.css" type="text/css">
+<div id="text-container">
+    <button id="list-all-nodes-button">List All Node IDs</button>
+    <p id="list-all-nodes-text">List of node IDs goes here</p>
+    <button id="add-node-button">Add a node</button>
+    <p id="add-node-text">Added node ID goes here</p>
+</div>
+<div id="graph-container">
+    <div id="graph-view">
+        <div class="graph-node" data-ntype="concept" id="gn1">Concept Node</div>
+        <div class="graph-node" data-ntype="explanation" id="gn2">Explanation Node</div>
+        <div class="graph-node" data-ntype="comment" id="gn3">Comment Node</div>
+    </div>
+</div>
+</body>
+</html>

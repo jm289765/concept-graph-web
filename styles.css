@@ -1,0 +1,57 @@
+
+html {
+    background-color: lavender;
+}
+
+#text-container {
+    width: 40vw;
+    float: left;
+}
+
+#graph-container {
+    height: 90vh;
+    width: 40vw;
+    margin: 20px 40px 20px 40px;
+    position: fixed;
+    right: 0;
+    float: right;
+    box-shadow: rebeccapurple;
+}
+
+#graph-view {
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    border: 5px outset darkmagenta;
+    position: relative; /* position: relative is required by jsplumb https://docs.jsplumbtoolkit.com/community/#where-does-jsplumb-add-elements */
+}
+
+.graph-node {
+    z-index: 5;
+    position:absolute;
+    padding: 5px;
+    font-family: sans-serif;
+    border: 5px solid navy;
+    background-color: white;
+}
+
+.graph-node[data-ntype="concept"] {
+    z-index: 20;
+    color: #220022;
+    border-color: magenta;
+}
+
+.graph-node[data-ntype="explanation"] {
+    z-index: 15;
+    border-color: darkorange;
+}
+
+.graph-node[data-ntype="comment"] {
+    z-index: 10;
+    border-color: darkgray;
+    background-color: #eeeeee;
+}
+
+.graph-node:hover {
+    z-index: 50
+}
