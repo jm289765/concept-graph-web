@@ -10,6 +10,19 @@
 <script type="module" src="httprequests.js"></script>
 <link rel="stylesheet" href="styles.css" type="text/css">
 <div id="text-container">
+    <p>
+        <label for="node-input">Selected Node</label>
+        <input id="node-input">
+    </p>
+    <p>
+        <label for="title-input">Title</label>
+        <input id="title-input">
+    </p>
+    <p>
+        <label for="content-input">Content</label>
+        <input id="content-input">
+    </p>
+    <p><button id="save-button">Save</button></p>
     <button id="list-all-nodes-button">List All Node IDs</button>
     <p id="list-all-nodes-text">List of node IDs goes here</p>
     <button id="add-node-button">Add a node</button>
@@ -17,9 +30,9 @@
 </div>
 <div id="graph-container">
     <div id="graph-view">
-        <div class="graph-node" data-ntype="concept" id="gn1">Concept Node</div>
-        <div class="graph-node" data-ntype="explanation" id="gn2">Explanation Node</div>
-        <div class="graph-node" data-ntype="comment" id="gn3">Comment Node</div>
+        <div class="graph-node" data-ntype="concept" id="concept-node-template">Concept Node</div>
+        <div class="graph-node" data-ntype="explanation" id="explanation-node-template">Explanation Node</div>
+        <div class="graph-node" data-ntype="comment" id="comment-node-template">Comment Node</div>
     </div>
 </div>
 </body>
