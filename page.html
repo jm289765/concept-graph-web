@@ -5,7 +5,6 @@
     <title>Graph Web App</title>
 </head>
 <body>
-<script type="module" src="modules/jsplumb.js"></script>
 <script type="module" src="main.js"></script>
 <script type="module" src="httprequests.js"></script>
 <link rel="stylesheet" href="styles.css" type="text/css">
@@ -58,23 +57,26 @@
         </div>
     </div>
     <div id="text-container">
-    <p>
+        <p>
         <label for="node-input">Selected Node</label>
         <input id="node-input">
-    </p>
-    <p>
+        </p>
+        <p>
         <label for="title-input">Title</label>
         <input id="title-input">
-    </p>
-    <p>
+        </p>
+        <p>
         <label for="content-input">Content</label>
         <input id="content-input">
-    </p>
-    <p><button id="save-button">Save</button></p>
-    <button id="list-all-nodes-button">List All Node IDs</button>
-    <p id="list-all-nodes-text">List of node IDs goes here</p>
-    <button id="add-node-button">Add a node</button>
-    <p id="add-node-text">Added node ID goes here</p>
+        </p>
+        <p>
+        <button id="update-button">Update</button>
+        <button id="create-button">Create New</button>
+        </p>
+        <p>
+            <button id="list-all-nodes-button">List All Node IDs</button>
+            <div id="list-all-nodes-text">List of node IDs goes here</div>
+        </p>
 </div>
 </div>
 </body>
