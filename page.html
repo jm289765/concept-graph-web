@@ -11,67 +11,32 @@
 <div id="all-container">
     <div id="node-container">
         <div id="node-view">
-            <label for="upper-select"></label>
-            <select id="upper-select" size="3">
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-            </select>
+            <label for="upper-neighbor-select"></label>
+            <select id="upper-neighbor-select" size="3"></select>
             <div id="selected-node-view">Selected</div>
-            <label for="lower-select"></label>
-            <select id="lower-select" size="3">
-                <option>4</option>
-                <option>5</option>
-                <option>6</option>
-            </select>
+            <label for="lower-neighbor-select"></label>
+            <select id="lower-neighbor-select" size="3"></select>
         </div>
     </div>
     <div id="text-container">
         <p>
-        <label for="node-input">Selected Node</label>
-        <input id="node-input">
+            <div id="node-select-container">
+                <label for="node-input" id="node-input-label">Node ID: </label>
+                <input id="node-input">
+                <button id="node-select-button">Select</button>
+            </div>
         </p>
         <p>
-        <label for="title-input">Title</label>
-        <input id="title-input">
+            <label for="title-input">Title</label>
+            <input id="title-input">
         </p>
         <p>
-        <label for="content-input">Content</label>
-        <input id="content-input">
+            <label for="content-input">Content</label>
+            <input id="content-input">
         </p>
         <p>
-        <button id="update-button">Update</button>
-        <button id="create-button">Create New</button>
+            <button id="update-button">Update</button>
+            <button id="create-button">Create New</button>
         </p>
         <p>
             <button id="list-all-nodes-button">List All Node IDs</button>

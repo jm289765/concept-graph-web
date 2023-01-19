@@ -21,6 +21,16 @@ body {
 #text-container {
     flex-grow: 3;
     padding: 10px 10px 10px 10px;
+    align-items: center;
+}
+
+#node-select-container {
+    display: flex;
+    flex-direction: row;
+}
+
+#node-input, #node-input-label, #node-select-button {
+    margin: auto 5px auto 5px;
 }
 
 #node-container {
@@ -55,7 +65,7 @@ option {
     border-color: #f0d0f0;
 }
 
-#upper-select {
+#upper-neighbor-select {
     margin-top: 20px;
 }
 
@@ -69,6 +79,6 @@ option {
     min-height: 19px;
 }
 
-#lower-select {
+#lower-neighbor-select {
     margin-bottom: 20px
 }

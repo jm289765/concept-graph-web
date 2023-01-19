@@ -22,7 +22,7 @@ class HttpRequests {
                 return res.text()
             }
         } catch (e) {
-            console.error(e.stackTrace)
+            console.error(e)
             return false
         }
     }
@@ -84,6 +84,11 @@ class HttpRequests {
          */
         const params = {id: id}
         return this.makeRequest("get-node", params, "GET")
+    }
+
+    static async getNeighbors(id) {
+        const params = {id: id}
+        return this.makeRequest("get-neighbors", params, "GET")
     }
 
     static async getGraph() {
