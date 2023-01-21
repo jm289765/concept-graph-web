@@ -125,17 +125,12 @@ class NodeList {
 }
 
 class NodeEditor {
-    // node editor elements
-    nodeInput = null
-    nodeSelectButton = null
-    titleInput = null
-    contentInput = null
-    saveButton = null
-    createButton = null
-    // node viewer elements
-    upperView = null
-    centerView = null
-    lowerView = null
+    // so that secondary editors can see what the main selected node is
+    static MainEditor = null
+
+    get selectedNode() {
+        return this.nodeList.selectedNode
+    }
 
     constructor(editElem, nodeList, viewerElem = null) {
         /*
@@ -162,7 +157,50 @@ class NodeEditor {
             this.upperView = viewerElem.querySelector(".node-view-upper-select")
             this.centerView = viewerElem.querySelector(".node-view-center-text")
             this.lowerView = viewerElem.querySelector(".node-view-lower-select")
+            const unlinkUpper = viewerElem.querySelector(".unlink-upper-button")
+            const unlinkLower = viewerElem.querySelector(".unlink-lower-button")
+
+            // todo: some sort of history thing so that you can easily undo accidental unlinks. also confirmation dialog
+            unlinkUpper.onclick = this.unlinkUpper.bind(this)
+            unlinkLower.onclick = this.unlinkLower.bind(this)
         }
+
+        this.linkParentButton = editElem.querySelector(".link-parent-button")
+        this.linkChildButton = editElem.querySelector(".link-child-button")
+
+        if (this.linkParentButton)
+            this.linkParentButton.onclick = async () => {
+                await this.updateDisplayedNode()
+                await requests.linkNode(this.nodeInput.value, NodeEditor.MainEditor.selectedNode)
+                await NodeEditor.MainEditor.updateDisplayedNode()
+            }
+
+        if (this.linkChildButton)
+            this.linkChildButton.onclick = async () => {
+                await this.updateDisplayedNode()
+                await requests.linkNode(NodeEditor.MainEditor.selectedNode, this.nodeInput.value)
+                await NodeEditor.MainEditor.updateDisplayedNode()
+            }
+    }
+
+    async unlinkUpper() {
+        if (this.upperView.selectedIndex === -1)
+            return
+
+        const upper = this.upperView.options[this.upperView.selectedIndex].value
+        await requests.unlinkNode(upper, this.selectedNode)
+        await NodeEditor.MainEditor.updateDisplayedNode()
+    }
+
+    async unlinkLower() {
+        if (this.lowerView.selectedIndex === -1)
+            return
+
+        console.log(this.lowerView.options)
+        console.log(this.lowerView.selectedIndex)
+        const lower = this.lowerView.options[this.lowerView.selectedIndex].value
+        await requests.unlinkNode(this.selectedNode, lower)
+        await NodeEditor.MainEditor.updateDisplayedNode()
     }
 
     async updateDisplayedNode(id=null) {
@@ -217,7 +255,8 @@ class NodeEditor {
         tell the server to set the selected node's attributes to the values in
         the editor boxes. if the values are already accurate, no change.
          */
-        const nodeId = this.nodeList.selectedNode
+        // todo: check that this.selectedNode is the same as this.nodeInput.value
+        const nodeId = this.selectedNode
 
         const node = await this.nodeList.get(nodeId)
         if (!node) {
@@ -250,6 +289,7 @@ class NodeEditor {
         // todo: support for user-specified node type
         const newNodeId = await requests.addNode("concept", this.titleInput.value, this.contentInput.value)
         await this.updateDisplayedNode(newNodeId)
+        this.titleInput.focus()
     }
 
     async updateNodeNeighborList() {
@@ -267,10 +307,12 @@ class NodeEditor {
         if (!neighbors)
             return
 
+        const dblClickEvent = (event) => NodeEditor.MainEditor.updateDisplayedNode(event.target.value)
         function makeElem(nodeJSON) {
             const elem = document.createElement("option")
             elem.innerText = `[${nodeJSON.id}] ${nodeJSON.title}`
-            elem.dataset["node_id"] = elem.id
+            elem.value = nodeJSON.id
+            elem.ondblclick = dblClickEvent
             return elem
         }
 
@@ -308,6 +350,7 @@ async function init() {
     const nodeViewer = document.getElementById("node-viewer")
     const mainEdit = new NodeEditor(mainEditElem, nodeList, nodeViewer)
 
+    NodeEditor.MainEditor = mainEdit
     await mainEdit.nodeList.update(0) // retrieve root node from server
     await mainEdit.updateDisplayedNode(0)
 
@@ -316,6 +359,14 @@ async function init() {
     const secNodeList = new NodeList()
     const secEditElem = document.getElementById("secondary-editor")
     const secEdit = new NodeEditor(secEditElem, secNodeList)
+
+    const updateSec = (event) => {
+        const sel = event.target
+        secEdit.updateDisplayedNode(sel.options[sel.selectedIndex].value)
+    }
+
+    mainEdit.upperView.addEventListener("change", updateSec)
+    mainEdit.lowerView.addEventListener("change", updateSec)
 }
 
 init()

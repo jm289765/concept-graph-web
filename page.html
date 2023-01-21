@@ -10,11 +10,15 @@
 <link rel="stylesheet" href="styles.css" type="text/css">
 <div id="all-container">
     <div class="node-viewer" id="node-viewer">
-        <label for="upper-neighbor-select"></label>
-        <select class="node-view-upper-select" id="upper-neighbor-select" size="3"></select>
-        <div class="node-view-center-text" id="selected-node-view">Selected</div>
-        <label for="lower-neighbor-select"></label>
-        <select class="node-view-lower-select" id="lower-neighbor-select" size="3"></select>
+        <div class="node-viewer-select-container">
+            <select class="node-view-upper-select node-view-select" size="3"></select>
+            <button class="unlink-upper-button node-viewer-button">Unlink Parent</button>
+        </div>
+        <div class="node-viewer-center-text">Selected</div>
+        <div class="node-viewer-select-container">
+            <select class="node-view-lower-select node-view-select" size="3"></select>
+            <button class="unlink-lower-button node-viewer-button">Unlink Child</button>
+        </div>
     </div>
     <div id="main-editor" class="node-editor">
         <p>
@@ -42,6 +46,10 @@
                     <button class="node-select-button">Select</button>
                 </label>
             </div>
+        </p>
+        <p class="editor-link-buttons">
+            <button class="link-parent-button">Link as Parent</button>
+            <button class="link-child-button">Link as Child</button>
         </p>
         <p><label>Title: <input class="node-title-input"></label></p>
         <p><label>Content: <input class="node-content-input"></label></p>

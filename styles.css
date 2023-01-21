@@ -50,25 +50,71 @@ body {
     border: 5px solid darkmagenta;
 }
 
-.node-view-upper-select, .node-view-lower-select {
-    border: 2px solid darkmagenta;
+.node-viewer-select-container {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background-color: lavender;
+    border: 3px solid darkmagenta;
     padding: 10px 8px 10px 8px;
+    width: 100%;
     flex-grow: 1;
-    margin: 10px 10px 10px 10px;
     min-height: 75px;
 }
 
-option {
+.node-viewer option {
     border-style: solid solid none solid;
     border-width: 1px;
     border-color: #f0d0f0;
 }
 
-#upper-neighbor-select {
-    margin-top: 20px;
+.node-viewer option:checked {
+    background-color: lavender;
 }
 
-#selected-node-view {
+.node-viewer option:hover {
+    background-color: darkmagenta;
+    color: white
+}
+
+.node-viewer option[selected] {
+    /* doesn't work. unfortunately, i can't figure out how to set the
+    currently selected option's highlight color to not be the default blue.
+    option[selected] doesn't work.
+    *::selection and *::-moz-selection apply to other highlights, but not options.
+    option:focus doesn't work.
+     */
+    background-color: pink;
+}
+
+.node-viewer option:focus {
+    background-color: magenta;
+}
+
+.node-viewer-select-container button {
+    border: 2px solid darkmagenta;
+    background-color: white;
+    width: 150px;
+}
+
+.node-viewer-select-container button:hover {
+    background-color: darkmagenta;
+    color: white;
+}
+
+.node-viewer-select-container button:active {
+    background-color: darkorchid;
+    color: white;
+}
+
+.node-view-select {
+    padding: 10px 8px 10px 8px;
+    margin: 10px 0px 10px 0px;
+    border: 2px solid darkmagenta;
+    flex-grow: 1;
+}
+
+.node-viewer-center-text {
     margin: 50px 10px 50px 10px;
     height: auto;
     border: 3px solid darkmagenta;
@@ -76,8 +122,4 @@ option {
     padding: 5px 10px 5px 10px;
     word-wrap: break-word;
     min-height: 19px;
-}
-
-#lower-neighbor-select {
-    margin-bottom: 20px
 }
