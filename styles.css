@@ -16,42 +16,41 @@ body {
     display: flex;
     flex-grow: 1;
     flex-direction: row;
-}
-
-#text-container {
-    flex-grow: 3;
     padding: 10px 10px 10px 10px;
-    align-items: center;
 }
 
-#node-select-container {
+.node-editor {
+    flex-grow: 1;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 10px 10px 0 10px;
+    border-width: 5px 5px 5px 0;
+    border-style: solid;
+    border-color: darkmagenta;
+}
+
+.node-input-container {
     display: flex;
     flex-direction: row;
 }
 
-#node-input, #node-input-label, #node-select-button {
+.node-input-container * {
     margin: auto 5px auto 5px;
 }
 
-#node-container {
+.node-viewer {
     flex-grow: 1;
-    margin: 20px 40px 20px 30px;
-    box-shadow: rebeccapurple;
+    padding: 20px 40px 20px 30px;
+    box-sizing: border-box;
     max-width: 36%;
     min-width: 36%;
-}
-
-#node-view {
-    height: 100%;
-    width: 100%;
     display: flex;
     flex-direction: column;
     background-color: white;
-    border: 5px outset darkmagenta;
-    position: relative; /* position: relative is required by jsplumb https://docs.jsplumbtoolkit.com/community/#where-does-jsplumb-add-elements */
+    border: 5px solid darkmagenta;
 }
 
-select {
+.node-view-upper-select, .node-view-lower-select {
     border: 2px solid darkmagenta;
     padding: 10px 8px 10px 8px;
     flex-grow: 1;

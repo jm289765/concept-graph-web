@@ -1,28 +1,17 @@
 import {HttpRequests as requests} from "./httprequests.js";
 
 class NodeList {
-    _nodeList = {} // dict<int, jsonData>
+    static _nodeList = {} // dict<int, jsonData>
 
-    _selected = null
-    get selectedNode() { return this._selected; }
+    _selectedNode = null // the node in the primary editor and whose neighbors are displayed
+    get selectedNode() { return this._selectedNode; }
     set selectedNode(id) {
         /* does not call this.get(id), so this won't automatically get the node from the server. see this.select(id) */
         if (id === null || this.has(id)) {
-            this._selected = id
+            this._selectedNode = id
             return true
         } else {
-            this._selected = null
-            return false
-        }
-    }
-
-    async select(id) {
-        /* unlike selectedNode setter, this gets the node from the server if necessary */
-        if (id === null || await this.get(id)) {
-            this._selected = id
-            return true
-        } else {
-            this._selected = null
+            this._selectedNode = null
             return false
         }
     }
@@ -48,7 +37,7 @@ class NodeList {
         }
 
         for (let node of njson) {
-            nodeList.put(nodeJSON.id, nodeJSON)
+            NodeList.put(node.id, node)
         }
     }
 
@@ -62,12 +51,12 @@ class NodeList {
         if (!NodeList.validId(id))
             return false
 
-        if (id in this._nodeList) {
-            return this._nodeList[id]
+        if (id in NodeList._nodeList) {
+            return NodeList._nodeList[id]
         } else {
             await this.update(id)
             if (this.has(id)) {
-                return this._nodeList[id]
+                return NodeList._nodeList[id]
             } else {
                 return false
             }
@@ -79,7 +68,7 @@ class NodeList {
         return this.get(id)
     }
 
-    put(id, json) {
+    static put(id, json) {
         /*
         adds a key-value pair to the underlying dictionary: {id: json}.
 
@@ -88,14 +77,14 @@ class NodeList {
         if (!NodeList.validId(id))
             return false
 
-        this._nodeList[id] = json
+        NodeList._nodeList[id] = json
     }
 
     has(id) {
         /*
         returns true if the id is in the node list. be aware that NodeList.get(id) handles this automatically.
          */
-        return id in this._nodeList
+        return id in NodeList._nodeList
     }
 
     async update(id) {
@@ -135,166 +124,198 @@ class NodeList {
     }
 }
 
-const nodeList = new NodeList()
+class NodeEditor {
+    // node editor elements
+    nodeInput = null
+    nodeSelectButton = null
+    titleInput = null
+    contentInput = null
+    saveButton = null
+    createButton = null
+    // node viewer elements
+    upperView = null
+    centerView = null
+    lowerView = null
 
-async function updateNodeNeighborList() {
-    /*
-    updates the lists that display the selected node's predecessors and successors.
-     */
-    const preList = document.getElementById("upper-neighbor-select")
-    const sucList = document.getElementById("lower-neighbor-select")
-    preList.innerHTML = "" // removes all child elements
-    sucList.innerHTML = "" // removes all child elements
-
-    const neighbors = nodeList.getNeighbors(nodeList.selectedNode)
-
-    if (!neighbors)
-        return
-
-    function makeElem(nodeJSON) {
-        const elem = document.createElement("option")
-        elem.innerText = `[${nodeJSON.id}] ${nodeJSON.title}`
-        elem.dataset["node-id"] = elem.id
-        return elem
-    }
-
-    const elems = {}
-    console.log(JSON.stringify(neighbors))
-    for (let x of neighbors["nodes"]) {
-        /* neighbors["nodes"] is a list of json objects */
-        elems[x.id] = makeElem(x)
-    }
-
-    for (let x of neighbors["edges"]) {
-        /* edges is a list of lists of 2 elements: source id, target id */
-        if (x[0] === x[1]) {
-            // node has edge to itself, call it a predecessor
-            if (!(elems[x[0]] in preList)) {
-                preList.appendChild(elems[x[0]])
+    constructor(editElem, nodeList, viewerElem = null) {
+        /*
+        takes an editor html div as input. see div with id "main-edit" for example.
+         */
+        this.nodeList = nodeList
+        this.nodeInput = editElem.querySelector(".node-id-input")
+        this.nodeSelectButton = editElem.querySelector(".node-select-button")
+        this.nodeSelectButton.onclick = () => this.updateDisplayedNode()
+        this.nodeInput.onkeydown = async (event) => {
+            if (event.key === "Enter") {
+                await this.updateDisplayedNode()
             }
-            continue
         }
 
-        if (x[0] === nodeList.selectedNode) {
-            // selected node is source, target is successor
-            sucList.appendChild(elems[x[1]])
-        } else if (x[1] === nodeList.selectedNode) {
-            // selected node is target, source is predecessor
-            sucList.appendChild(elems[x[0]])
+        this.titleInput = editElem.querySelector(".node-title-input")
+        this.contentInput = editElem.querySelector(".node-content-input")
+        this.saveButton = editElem.querySelector(".node-update-button")
+        this.saveButton.onclick = this.updateButtonFunc.bind(this)
+        this.createButton = editElem.querySelector(".node-create-button")
+        this.createButton.onclick = this.createButtonFunc.bind(this)
+
+        if (viewerElem !== null) {
+            this.upperView = viewerElem.querySelector(".node-view-upper-select")
+            this.centerView = viewerElem.querySelector(".node-view-center-text")
+            this.lowerView = viewerElem.querySelector(".node-view-lower-select")
         }
     }
-}
 
-async function updateDisplayedNode(id=null) {
-    /*
-    display the node specified by `id` param. if id is null, display node specified by
-    the "node-input" input box.
+    async updateDisplayedNode(id=null) {
+        /*
+        display the node specified by `id` param. if id is null, display node specified by
+        the "node-input" input box.
 
-    handles all things necessary to change the displayed node.
-     */
-    const nodeInput = document.getElementById("node-input")
-    const titleInput = document.getElementById("title-input")
-    const contentInput = document.getElementById("content-input")
-    const titleDisplay = document.getElementById("selected-node-view")
+        handles all things necessary to change the displayed node.
+         */
 
-    if (id !== null) {
-        nodeInput.value = id
-    }
+        if (id !== null) {
+            this.nodeList.selectedNode = id
+            this.nodeInput.value = id
+        }
 
-    if (nodeInput.value === "0") { // can't edit root node
-        titleInput.setAttribute("disabled", "")
-        contentInput.setAttribute("disabled", "")
-    } else {
-        titleInput.removeAttribute("disabled")
-        contentInput.removeAttribute("disabled")
-    }
-
-    const node = await nodeList.get(nodeInput.value)
-    if (node) {
-        nodeList.selectedNode = node.id
-        titleInput.value = node["title"]
-        contentInput.value = node["content"]
-        // todo: move the node id display to a different element
-        // todo: better way to handle excessively long titles
-        titleDisplay.innerText = `[${node["id"]}] ${node["title"]}`
-    } else { // invalid node
-        nodeList.selectedNode = null
-        titleInput.value = ""
-        contentInput.value = ""
-        if(nodeInput.value === "") {
-            titleDisplay.innerText = "No node selected."
+        if (this.nodeInput.value === "0") { // can't edit root node
+            this.titleInput.setAttribute("disabled", "")
+            this.contentInput.setAttribute("disabled", "")
         } else {
-            titleDisplay.innerText = "Node does not exist."
+            this.titleInput.removeAttribute("disabled")
+            this.contentInput.removeAttribute("disabled")
+        }
+
+        const node = await this.nodeList.get(this.nodeInput.value)
+        if (node) {
+            this.nodeList.selectedNode = node.id
+            this.titleInput.value = node["title"]
+            this.contentInput.value = node["content"]
+            // todo: move the node id display to a different element
+            // todo: better way to handle excessively long titles
+            if (this.centerView) {
+                this.centerView.innerText = `[${node["id"]}] ${node["title"]}`
+            }
+        } else { // invalid node
+            this.nodeList.selectedNode = null
+            this.titleInput.value = ""
+            this.contentInput.value = ""
+            if (this.centerView) {
+                if (this.nodeInput.value === "") {
+                    this.centerView.innerText = "No node selected."
+                } else {
+                    this.centerView.innerText = "Node does not exist."
+                }
+            }
+        }
+
+        await this.updateNodeNeighborList()
+    }
+
+    async updateButtonFunc() {
+        /*
+        tell the server to set the selected node's attributes to the values in
+        the editor boxes. if the values are already accurate, no change.
+         */
+        const nodeId = this.nodeList.selectedNode
+
+        const node = await this.nodeList.get(nodeId)
+        if (!node) {
+            console.error(`Cannot update node: this.nodeList.get(nodeId) returned ${node}.`)
+        }
+        else {
+            let u = false
+            if (this.titleInput.value !== node.title) {
+                u = true
+                await requests.updateNode(nodeId, "title", this.titleInput.value)
+            }
+
+            if (this.contentInput.value !== node.content) {
+                u = true
+                await requests.updateNode(nodeId, "content", this.contentInput.value)
+            }
+
+            if (u) {
+                await this.nodeList.update(nodeId)
+                await this.updateDisplayedNode(nodeId)
+            }
         }
     }
 
-    await updateNodeNeighborList()
-}
+    async createButtonFunc() {
+        /*
+        creates a new node using the title and content from their respective input boxes. then displays the new node.
+         */
 
-async function updateButtonFunc() {
-    /*
-    tell the server to set the selected node's attributes to the values in
-    the editor boxes. if the values are already accurate, no change.
-     */
-    const titleInput = document.getElementById("title-input")
-    const contentInput = document.getElementById("content-input")
-    const nodeId = nodeList.selectedNode
-
-    const node = await nodeList.get(nodeId)
-    if (!node) {
-        // todo: error message?
+        // todo: support for user-specified node type
+        const newNodeId = await requests.addNode("concept", this.titleInput.value, this.contentInput.value)
+        await this.updateDisplayedNode(newNodeId)
     }
-    else {
-        let u = false
-        if (titleInput.value !== node.title) {
-            u = true
-            await requests.updateNode(nodeId, "title", titleInput.value)
+
+    async updateNodeNeighborList() {
+        /*
+        updates the lists that display the selected node's predecessors and successors.
+         */
+        if (!this.upperView || !this.lowerView)
+            return
+
+        this.upperView.innerHTML = "" // removes all child elements
+        this.lowerView.innerHTML = "" // removes all child elements
+
+        const neighbors = await this.nodeList.getNeighbors(this.nodeList.selectedNode)
+
+        if (!neighbors)
+            return
+
+        function makeElem(nodeJSON) {
+            const elem = document.createElement("option")
+            elem.innerText = `[${nodeJSON.id}] ${nodeJSON.title}`
+            elem.dataset["node_id"] = elem.id
+            return elem
         }
 
-        if (contentInput.value !== node.content) {
-            u = true
-            await requests.updateNode(nodeId, "content", contentInput.value)
+        const elems = {}
+        for (let x of neighbors["nodes"]) {
+            /* neighbors["nodes"] is a list of json objects */
+            elems[x.id] = makeElem(x)
         }
 
-        if (u) {
-            await nodeList.update(nodeId)
-            await updateDisplayedNode(nodeId)
+        for (let x of neighbors["edges"]) {
+            /* edges is a list of lists of 2 elements: source id, target id */
+            if (x[0] === x[1]) {
+                // node has edge leading to itself, call it a predecessor
+                if (!(elems[x[0]] in this.upperView)) {
+                    this.upperView.appendChild(elems[x[0]])
+                }
+                continue
+            }
+
+            if (x[0] === this.nodeList.selectedNode) {
+                // selected node is source, target is successor
+                this.lowerView.appendChild(elems[x[1]])
+            } else if (x[1] === this.nodeList.selectedNode) {
+                // selected node is target, source is predecessor
+                this.upperView.appendChild(elems[x[0]])
+            }
         }
     }
-}
-
-async function createButtonFunc() {
-    /*
-    creates a new node using the title and content from their respective input boxes. then displays the new node.
-     */
-    const titleInput = document.getElementById("title-input")
-    const contentInput = document.getElementById("content-input")
-
-    // todo: support for user-specified node type
-    const newNodeId = await requests.addNode("concept", titleInput.value, contentInput.value)
-    await updateDisplayedNode(newNodeId)
 }
 
 async function init() {
-    await updateDisplayedNode(0)
+    const nodeList = new NodeList()
 
-    const nodeInput = document.getElementById("node-input")
-    // todo: add a node preview window for nodeInput.onInput
-    const nodeSelectButton = document.getElementById("node-select-button")
-    nodeSelectButton.onclick = () => updateDisplayedNode()
-    nodeInput.onkeydown = (event) => {
-        if (event.key === "Enter") {
-            updateDisplayedNode()
-        }
-    }
+    const mainEditElem = document.getElementById("main-editor")
+    const nodeViewer = document.getElementById("node-viewer")
+    const mainEdit = new NodeEditor(mainEditElem, nodeList, nodeViewer)
 
-    const saveButton = document.getElementById("update-button")
-    saveButton.onclick = updateButtonFunc
-    const createButton = document.getElementById("create-button")
-    createButton.onclick = createButtonFunc
+    await mainEdit.nodeList.update(0) // retrieve root node from server
+    await mainEdit.updateDisplayedNode(0)
 
-    const listAllButton = document.getElementById("list-all-nodes-button")
-    listAllButton.onclick = listAllButtonFunc
+    // todo: add a nodeUpdated event, and call it when the secondary editor updates a node. it'll
+    //  update everything in the main editor to reflect the new value
+    const secNodeList = new NodeList()
+    const secEditElem = document.getElementById("secondary-editor")
+    const secEdit = new NodeEditor(secEditElem, secNodeList)
 }
 
 init()
