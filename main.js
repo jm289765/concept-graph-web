@@ -139,6 +139,7 @@ class NodeEditor {
         this.nodeList = nodeList
         this.nodeInput = editElem.querySelector(".node-id-input")
         this.nodeSelectButton = editElem.querySelector(".node-select-button")
+        this.nodeIdLabel = editElem.querySelector(".node-editor-id-label")
         this.nodeSelectButton.onclick = () => this.updateDisplayedNode()
         this.nodeInput.onkeydown = async (event) => {
             if (event.key === "Enter") {
@@ -151,14 +152,30 @@ class NodeEditor {
         this.saveButton = editElem.querySelector(".node-update-button")
         this.saveButton.onclick = this.updateButtonFunc.bind(this)
         this.createButton = editElem.querySelector(".node-create-button")
-        this.createButton.onclick = this.createButtonFunc.bind(this)
+        this.createButton.onclick = () => this.createButtonFunc()
 
         if (viewerElem !== null) {
-            this.upperView = viewerElem.querySelector(".node-view-upper-select")
-            this.centerView = viewerElem.querySelector(".node-view-center-text")
-            this.lowerView = viewerElem.querySelector(".node-view-lower-select")
+            this.upperView = viewerElem.querySelector(".node-viewer-upper-select")
+            this.centerView = viewerElem.querySelector(".node-viewer-center-text")
+            this.lowerView = viewerElem.querySelector(".node-viewer-lower-select")
             const unlinkUpper = viewerElem.querySelector(".unlink-upper-button")
             const unlinkLower = viewerElem.querySelector(".unlink-lower-button")
+            const newParentButton = viewerElem.querySelector(".add-new-parent-button")
+            const newChildButton = viewerElem.querySelector(".add-new-child-button")
+
+            newParentButton.onclick = async () => {
+                const selId = this.selectedNode
+                const newId = await requests.addNode("concept", "New Node")
+                await requests.linkNode(newId, selId)
+                await this.updateDisplayedNode(newId)
+            }
+
+            newChildButton.onclick = async () => {
+                const selId = this.selectedNode
+                const newId = await requests.addNode("concept", "New Node")
+                await requests.linkNode(selId, newId)
+                await this.updateDisplayedNode(newId)
+            }
 
             // todo: some sort of history thing so that you can easily undo accidental unlinks. also confirmation dialog
             unlinkUpper.onclick = this.unlinkUpper.bind(this)
@@ -226,15 +243,17 @@ class NodeEditor {
 
         const node = await this.nodeList.get(this.nodeInput.value)
         if (node) {
+            this.nodeIdLabel.innerText = node.id
             this.nodeList.selectedNode = node.id
             this.titleInput.value = node["title"]
             this.contentInput.value = node["content"]
             // todo: move the node id display to a different element
             // todo: better way to handle excessively long titles
             if (this.centerView) {
-                this.centerView.innerText = `[${node["id"]}] ${node["title"]}`
+                this.centerView.innerText = `[#${node["id"]}] ${node["title"]}`
             }
         } else { // invalid node
+            this.nodeIdLabel.innerText = "None"
             this.nodeList.selectedNode = null
             this.titleInput.value = ""
             this.contentInput.value = ""
@@ -281,15 +300,19 @@ class NodeEditor {
         }
     }
 
-    async createButtonFunc() {
+    async createButtonFunc(title=null, content=null) {
         /*
         creates a new node using the title and content from their respective input boxes. then displays the new node.
+
+        returns the new node's id
          */
 
         // todo: support for user-specified node type
-        const newNodeId = await requests.addNode("concept", this.titleInput.value, this.contentInput.value)
+        const newNodeId =
+            await requests.addNode("concept", title || this.titleInput.value, content || this.contentInput.value)
         await this.updateDisplayedNode(newNodeId)
         this.titleInput.focus()
+        return newNodeId
     }
 
     async updateNodeNeighborList() {
@@ -307,12 +330,10 @@ class NodeEditor {
         if (!neighbors)
             return
 
-        const dblClickEvent = (event) => NodeEditor.MainEditor.updateDisplayedNode(event.target.value)
         function makeElem(nodeJSON) {
             const elem = document.createElement("option")
-            elem.innerText = `[${nodeJSON.id}] ${nodeJSON.title}`
+            elem.innerText = `[#${nodeJSON.id}] ${nodeJSON.title}`
             elem.value = nodeJSON.id
-            elem.ondblclick = dblClickEvent
             return elem
         }
 
@@ -322,22 +343,32 @@ class NodeEditor {
             elems[x.id] = makeElem(x)
         }
 
+        const dblClickEvent = (event) => NodeEditor.MainEditor.updateDisplayedNode(event.target.value)
+        function appendElem(view, id) {
+            const elem = elems[id].cloneNode(true)
+            elem.ondblclick = dblClickEvent
+            view.appendChild(elem)
+        }
+
+        let circle = false
         for (let x of neighbors["edges"]) {
             /* edges is a list of lists of 2 elements: source id, target id */
+
             if (x[0] === x[1]) {
-                // node has edge leading to itself, call it a predecessor
-                if (!(elems[x[0]] in this.upperView)) {
-                    this.upperView.appendChild(elems[x[0]])
-                }
+                if (circle) continue
+                // so that edges to itself won't put two copies in this.lowerView
+                appendElem(this.upperView, x[0])
+                appendElem(this.lowerView, x[0])
+                circle = true
                 continue
             }
 
             if (x[0] === this.nodeList.selectedNode) {
                 // selected node is source, target is successor
-                this.lowerView.appendChild(elems[x[1]])
+                appendElem(this.lowerView, x[1])
             } else if (x[1] === this.nodeList.selectedNode) {
                 // selected node is target, source is predecessor
-                this.upperView.appendChild(elems[x[0]])
+                appendElem(this.upperView, x[0])
             }
         }
     }
@@ -355,7 +386,7 @@ async function init() {
     await mainEdit.updateDisplayedNode(0)
 
     // todo: add a nodeUpdated event, and call it when the secondary editor updates a node. it'll
-    //  update everything in the main editor to reflect the new value
+    //  update everything in the main editor (i.e. node viewer's titles) to reflect the new value
     const secNodeList = new NodeList()
     const secEditElem = document.getElementById("secondary-editor")
     const secEdit = new NodeEditor(secEditElem, secNodeList)

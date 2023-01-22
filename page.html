@@ -11,51 +11,59 @@
 <div id="all-container">
     <div class="node-viewer" id="node-viewer">
         <div class="node-viewer-select-container">
-            <select class="node-view-upper-select node-view-select" size="3"></select>
-            <button class="unlink-upper-button node-viewer-button">Unlink Parent</button>
+            <select class="node-viewer-upper-select" size="3"></select>
+            <div class="node-viewer-buttons">
+                <button class="unlink-upper-button node-viewer-button">Unlink Selected</button>
+                <button class="add-new-parent-button node-viewer-button">Create New Parent</button>
+            </div>
         </div>
         <div class="node-viewer-center-text">Selected</div>
         <div class="node-viewer-select-container">
-            <select class="node-view-lower-select node-view-select" size="3"></select>
-            <button class="unlink-lower-button node-viewer-button">Unlink Child</button>
+            <div class="node-viewer-buttons">
+                <button class="unlink-lower-button">Unlink Selected</button>
+                <button class="add-new-child-button">Create New Child</button>
+            </div>
+            <select class="node-viewer-lower-select" size="3"></select>
         </div>
     </div>
     <div id="main-editor" class="node-editor">
-        <p>
-            <div class="node-input-container">
-                <label class="node-input-label">
-                    Node ID:
-                    <input class="node-id-input">
-                    <button class="node-select-button">Select</button>
-                </label>
-            </div>
-        </p>
-        <p><label>Title: <input class="node-title-input"></label></p>
-        <p><label>Content: <input class="node-content-input"></label></p>
+        <p>Node ID: <span class="node-editor-id-label"></span></p>
+        <label class="title-editor-label">Title: <input class="node-title-input"></label>
+        <label class="content-editor-label">Content: <textarea class="node-content-input" spellcheck="false"></textarea></label>
         <p>
             <button class="node-update-button">Update</button>
             <button class="node-create-button">Create New</button>
         </p>
+        <p>
+        <div class="node-input-container">
+            <label class="node-input-label">
+                Node ID:
+                <input class="node-id-input">
+                <button class="node-select-button">Select</button>
+            </label>
+        </div>
+        </p>
     </div>
     <div id="secondary-editor" class="node-editor">
+        <p>Node ID: <span class="node-editor-id-label"></span></p>
+        <label class="title-editor-label">Title: <input class="node-title-input"></label>
+        <label class="content-editor-label">Content: <textarea class="node-content-input" spellcheck="false"></textarea></label>
         <p>
-            <div class="node-input-container">
-                <label id="node-input-label">
-                    Node ID:
-                    <input class="node-id-input">
-                    <button class="node-select-button">Select</button>
-                </label>
-            </div>
+            <button class="node-update-button">Update</button>
+            <button class="node-create-button">Create New</button>
         </p>
+        <p>
+        <div class="node-input-container">
+            <label id="node-input-label">
+                Node ID:
+                <input class="node-id-input">
+                <button class="node-select-button">Select</button>
+            </label>
+        </div>
         <p class="editor-link-buttons">
             <button class="link-parent-button">Link as Parent</button>
             <button class="link-child-button">Link as Child</button>
         </p>
-        <p><label>Title: <input class="node-title-input"></label></p>
-        <p><label>Content: <input class="node-content-input"></label></p>
-        <p>
-            <button class="node-update-button">Update</button>
-            <button class="node-create-button">Create New</button>
         </p>
     </div>
 </div>

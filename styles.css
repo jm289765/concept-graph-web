@@ -21,9 +21,11 @@ body {
 
 .node-editor {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
     height: 100%;
-    padding: 10px 10px 0 10px;
+    padding: 10px;
     border-width: 5px 5px 5px 0;
     border-style: solid;
     border-color: darkmagenta;
@@ -36,6 +38,45 @@ body {
 
 .node-input-container * {
     margin: auto 5px auto 5px;
+}
+
+.node-editor button, .node-editor input {
+    padding: 5px 5px 5px 5px;
+    border: 1px solid mediumpurple;
+    background-color: white;
+}
+
+.node-editor input:disabled {
+    background-color: lavender;
+}
+
+.node-editor button:hover {
+    background-color: darkmagenta;
+    color: white;
+}
+
+.node-editor button:active {
+    background-color: darkorchid;
+    color: white;
+}
+
+.title-editor-label {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 10px 0;
+}
+
+.content-editor-label {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 10px 0;
+}
+
+.node-content-input {
+    resize: none;
+
+    flex-grow: 1;
 }
 
 .node-viewer {
@@ -91,10 +132,18 @@ body {
     background-color: magenta;
 }
 
-.node-viewer-select-container button {
+.node-viewer-buttons {
+    display: flex;
+    flex-direction: row;
+}
+
+.node-viewer-buttons button {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: auto 10px auto 10px;
     border: 2px solid darkmagenta;
     background-color: white;
-    width: 150px;
+    width: auto;
 }
 
 .node-viewer-select-container button:hover {
@@ -107,7 +156,7 @@ body {
     color: white;
 }
 
-.node-view-select {
+.node-viewer select {
     padding: 10px 8px 10px 8px;
     margin: 10px 0px 10px 0px;
     border: 2px solid darkmagenta;
@@ -115,9 +164,11 @@ body {
 }
 
 .node-viewer-center-text {
-    margin: 50px 10px 50px 10px;
+    margin: 40px 10px 40px 10px;
     height: auto;
     border: 3px solid darkmagenta;
+    background-color: darkmagenta;
+    color: white;
     text-align: center;
     padding: 5px 10px 5px 10px;
     word-wrap: break-word;
