@@ -125,10 +125,12 @@ class NodeList {
 }
 
 class NodeEditor {
-    // so that secondary editors can see what the main selected node is
+    // there's probably a better way to do this. maybe a NodeViewer class with two NodeEditor objects?
     static MainEditor = null
+    static SecondaryEditor = null
 
     get selectedNode() {
+        /* id of the node currently selected by this NodeEditor */
         return this.nodeList.selectedNode
     }
 
@@ -141,6 +143,7 @@ class NodeEditor {
         this.nodeSelectButton = editElem.querySelector(".node-select-button")
         this.nodeIdLabel = editElem.querySelector(".node-editor-id-label")
         this.nodeSelectButton.onclick = () => this.updateDisplayedNode()
+        this.nodeInput.onblur = () => this.updateDisplayedNode()
         this.nodeInput.onkeydown = async (event) => {
             if (event.key === "Enter") {
                 await this.updateDisplayedNode()
@@ -148,11 +151,14 @@ class NodeEditor {
         }
 
         this.titleInput = editElem.querySelector(".node-title-input")
+        this.tagsInput = editElem.querySelector(".node-tags-input")
+        this.typeSelect = editElem.querySelector(".node-type-select")
         this.contentInput = editElem.querySelector(".node-content-input")
-        this.saveButton = editElem.querySelector(".node-update-button")
-        this.saveButton.onclick = this.updateButtonFunc.bind(this)
+        this.saveButton = editElem.querySelector(".node-save-button")
+        this.saveButton.onclick = () => this.saveButtonFunc()
         this.createButton = editElem.querySelector(".node-create-button")
         this.createButton.onclick = () => this.createButtonFunc()
+
 
         if (viewerElem !== null) {
             this.upperView = viewerElem.querySelector(".node-viewer-upper-select")
@@ -228,6 +234,12 @@ class NodeEditor {
         handles all things necessary to change the displayed node.
          */
 
+        // in case there are unsaved changes
+        await this.saveButtonFunc(false)
+
+        if (this.nodeList.selectedNode !== null && this === NodeEditor.MainEditor)
+            await viewHistory.add(this.nodeList.selectedNode)
+
         if (id !== null) {
             this.nodeList.selectedNode = id
             this.nodeInput.value = id
@@ -235,17 +247,29 @@ class NodeEditor {
 
         if (this.nodeInput.value === "0") { // can't edit root node
             this.titleInput.setAttribute("disabled", "")
+            this.tagsInput.setAttribute("disabled", "")
+            this.typeSelect.setAttribute("disabled", "")
+            this.typeSelect.options[this.typeSelect.options.length - 1].removeAttribute("disabled")
             this.contentInput.setAttribute("disabled", "")
+            this.saveButton.setAttribute("disabled", "")
+            // same for update button, tags list, and type
         } else {
             this.titleInput.removeAttribute("disabled")
+            this.tagsInput.removeAttribute("disabled")
+            this.typeSelect.removeAttribute("disabled")
+            this.typeSelect.options[this.typeSelect.options.length - 1].setAttribute("disabled", "")
             this.contentInput.removeAttribute("disabled")
+            this.saveButton.removeAttribute("disabled")
         }
 
         const node = await this.nodeList.get(this.nodeInput.value)
         if (node) {
+
             this.nodeIdLabel.innerText = node.id
             this.nodeList.selectedNode = node.id
             this.titleInput.value = node["title"]
+            this.tagsInput.value = node["tags"]
+            this.typeSelect.value = node["type"]
             this.contentInput.value = node["content"]
             // todo: move the node id display to a different element
             // todo: better way to handle excessively long titles
@@ -256,6 +280,8 @@ class NodeEditor {
             this.nodeIdLabel.innerText = "None"
             this.nodeList.selectedNode = null
             this.titleInput.value = ""
+            this.tagsInput.value = ""
+            this.typeSelect.value = "concept"
             this.contentInput.value = ""
             if (this.centerView) {
                 if (this.nodeInput.value === "") {
@@ -269,7 +295,7 @@ class NodeEditor {
         await this.updateNodeNeighborList()
     }
 
-    async updateButtonFunc() {
+    async saveButtonFunc(updateAfter=true) {
         /*
         tell the server to set the selected node's attributes to the values in
         the editor boxes. if the values are already accurate, no change.
@@ -278,25 +304,35 @@ class NodeEditor {
         const nodeId = this.selectedNode
 
         const node = await this.nodeList.get(nodeId)
-        if (!node) {
-            console.error(`Cannot update node: this.nodeList.get(nodeId) returned ${node}.`)
+        if (!node)
+            return
+
+        let u = false
+        if (this.titleInput.value !== node.title) {
+            u = true
+            await requests.updateNode(nodeId, "title", this.titleInput.value)
         }
-        else {
-            let u = false
-            if (this.titleInput.value !== node.title) {
-                u = true
-                await requests.updateNode(nodeId, "title", this.titleInput.value)
-            }
 
-            if (this.contentInput.value !== node.content) {
-                u = true
-                await requests.updateNode(nodeId, "content", this.contentInput.value)
-            }
+        if (this.contentInput.value !== node.content) {
+            u = true
+            await requests.updateNode(nodeId, "content", this.contentInput.value)
+        }
 
-            if (u) {
-                await this.nodeList.update(nodeId)
-                await this.updateDisplayedNode(nodeId)
-            }
+        if (this.tagsInput.value !== node["tags"]) {
+            u = true
+            await requests.updateNode(nodeId, "tags", this.tagsInput.value)
+        }
+
+        const type = this.typeSelect.options[this.typeSelect.selectedIndex].value
+        if (type !== node.type) {
+            u = true
+            await requests.updateNode(nodeId, "type", type)
+        }
+
+        if (u) {
+            await this.nodeList.update(nodeId)
+            if (updateAfter)
+                await NodeEditor.MainEditor.updateDisplayedNode() // update title in viewer list
         }
     }
 
@@ -307,11 +343,15 @@ class NodeEditor {
         returns the new node's id
          */
 
-        // todo: support for user-specified node type
-        const newNodeId =
-            await requests.addNode("concept", title || this.titleInput.value, content || this.contentInput.value)
+        let type = this.typeSelect.options[this.typeSelect.selectedIndex].value
+        if (type === "root") { type = "concept" }
+        const ti = title || this.titleInput.value
+        const co = content || this.contentInput.value
+        const tags = this.tagsInput.value
+        const newNodeId = await requests.addNode(type, ti, co, tags, this.selectedNode || 0)
         await this.updateDisplayedNode(newNodeId)
-        this.titleInput.focus()
+        if (this !== NodeEditor.MainEditor)
+            await NodeEditor.MainEditor.updateDisplayedNode()
         return newNodeId
     }
 
@@ -334,6 +374,7 @@ class NodeEditor {
             const elem = document.createElement("option")
             elem.innerText = `[#${nodeJSON.id}] ${nodeJSON.title}`
             elem.value = nodeJSON.id
+            // todo: add a class based on nodeJSON.type, and add css to color them
             return elem
         }
 
@@ -344,9 +385,13 @@ class NodeEditor {
         }
 
         const dblClickEvent = (event) => NodeEditor.MainEditor.updateDisplayedNode(event.target.value)
+        const clickEvent = (event) => {NodeEditor.SecondaryEditor.updateDisplayedNode(event.target.value)}
         function appendElem(view, id) {
             const elem = elems[id].cloneNode(true)
             elem.ondblclick = dblClickEvent
+            // this onclick makes updateDisplayedNode happen twice when a node is clicked, but it's necessary
+            // to keep the 'change' event listener for the <select> elements to catch arrow keys
+            elem.onclick = clickEvent
             view.appendChild(elem)
         }
 
@@ -374,12 +419,43 @@ class NodeEditor {
     }
 }
 
+let viewHistory
 async function init() {
     const nodeList = new NodeList()
 
     const mainEditElem = document.getElementById("main-editor")
     const nodeViewer = document.getElementById("node-viewer")
     const mainEdit = new NodeEditor(mainEditElem, nodeList, nodeViewer)
+
+    document.getElementById("view-history-select").onchange = (event) => {
+        NodeEditor.MainEditor.updateDisplayedNode(event.target.options[event.target.selectedIndex].value)
+    }
+
+    viewHistory = {
+        // viewHistory has to be set up before any node editor gets updated or displays a node
+        elem: document.getElementById("view-history-select"),
+        nodeList: mainEdit.nodeList, // hacky way to do this
+        makeOption: async (id) => {
+            const opt = document.createElement("option")
+            const node = await viewHistory.nodeList.get(id)
+            opt.value = node.id
+            opt.innerText = `[${node.id}] ${node.title}`
+            return opt
+        },
+        add: async (id) => {
+            if (viewHistory.elem.children.length > 100)
+                viewHistory.elem.firstChild.remove()
+
+            if (!viewHistory.elem.firstChild)
+                viewHistory.elem.appendChild(await viewHistory.makeOption(id))
+            else {
+                if (viewHistory.elem.lastChild.value == id)
+                    return
+                //viewHistory.elem.insertBefore(await viewHistory.makeOption(id), viewHistory.elem.firstChild)
+                viewHistory.elem.appendChild(await viewHistory.makeOption(id))
+            }
+        }
+    }
 
     NodeEditor.MainEditor = mainEdit
     await mainEdit.nodeList.update(0) // retrieve root node from server
@@ -390,14 +466,24 @@ async function init() {
     const secNodeList = new NodeList()
     const secEditElem = document.getElementById("secondary-editor")
     const secEdit = new NodeEditor(secEditElem, secNodeList)
+    NodeEditor.SecondaryEditor = secEdit
 
     const updateSec = (event) => {
         const sel = event.target
-        secEdit.updateDisplayedNode(sel.options[sel.selectedIndex].value)
+        NodeEditor.SecondaryEditor.updateDisplayedNode(sel.options[sel.selectedIndex].value)
+    }
+    const enterEvent = (event) => {
+        if (event.key === "Enter") {
+            const sel = event.target
+            NodeEditor.MainEditor.updateDisplayedNode(sel.options[sel.selectedIndex].value)
+        }
     }
 
-    mainEdit.upperView.addEventListener("change", updateSec)
-    mainEdit.lowerView.addEventListener("change", updateSec)
+    NodeEditor.MainEditor.upperView.addEventListener("change", updateSec)
+    NodeEditor.MainEditor.lowerView.addEventListener("change", updateSec)
+    NodeEditor.MainEditor.upperView.addEventListener("keydown", enterEvent)
+    NodeEditor.MainEditor.lowerView.addEventListener("keydown", enterEvent)
+
 }
 
 init()

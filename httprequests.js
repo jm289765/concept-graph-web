@@ -27,7 +27,7 @@ class HttpRequests {
         }
     }
 
-    static async addNode(type, title, content="", parent=0) {
+    static async addNode(type, title, content="", tags="", parent=0) {
         /*
         type: "concept", "explanation", "comment", etc
         title: title to be given to new node
@@ -36,7 +36,7 @@ class HttpRequests {
 
         return: id of new node
          */
-        const params = {type: type, title: title, content: content, parent: parent}
+        const params = {type: type, title: title, content: content, tags: tags, parent: parent}
         return this.makeRequest("add", params, "POST")
     }
 
@@ -51,7 +51,7 @@ class HttpRequests {
     static async updateNode(id,attr,val) {
         /*
         id: id of node to update
-        attr: name of attribute to update. "title", "content", or "type"
+        attr: name of attribute to update. "title", "content", "tags", or "type"
         val: new value of attribute
          */
         const params = {id: id, attr: attr, val: val}
