@@ -48,6 +48,11 @@ class HttpRequests {
         return this.makeRequest("delete", params, "DELETE")
     }
 
+    static async search(query) {
+        const params = {q: query}
+        return this.makeRequest("search", params, "GET")
+    }
+
     static async updateNode(id,attr,val) {
         /*
         id: id of node to update

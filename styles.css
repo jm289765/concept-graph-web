@@ -31,17 +31,8 @@ body {
     border-color: darkmagenta;
 }
 
-.node-input-container {
-    display: flex;
-    flex-direction: row;
-}
-
-.node-input-container * {
-    margin: auto 5px auto 5px;
-}
-
 .node-editor button, .node-editor input, .node-editor select {
-    padding: 5px 5px 5px 5px;
+    padding: 0.3em 5px 0.3em 5px;
     border: 1px solid darkorchid;
     background-color: white;
 }
@@ -62,6 +53,55 @@ body {
 
 .node-editor div, .node-editor label {
     margin: 5px 0 5px 0;
+}
+
+.search-input-label {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex-grow: 1;
+    margin-left: 5px;
+    flex-direction: column;
+    display: flex;
+}
+
+.node-search-input {
+    flex-grow: 1;
+}
+
+.search-results-list {
+    position: absolute;
+    border: 1px solid darkmagenta;
+    top: 1.3em;
+    width: 100%;
+    margin: 0;
+    padding: 0 10px 0 10px;
+    box-sizing: border-box;
+    background-color: darkmagenta;
+    z-index: 25;
+}
+
+.node-editor .search-results-item {
+    margin: 5px 0 5px 0;
+    padding: 5px;
+    border: 2px solid darkmagenta;
+    background-color: lavender;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.node-editor .search-results-item:hover {
+    outline: 3px solid magenta;
+}
+
+.node-editor .search-results-item:active {
+    background-color: magenta;
 }
 
 .title-editor-label {
@@ -85,8 +125,19 @@ body {
 }
 
 .node-content-input {
+    padding: 8px;
     resize: none;
+    font-family: sans-serif;
     flex-grow: 1;
+}
+
+.node-input-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.node-input-container * {
+    margin: auto 5px auto 5px;
 }
 
 .node-viewer {
@@ -117,6 +168,9 @@ body {
     border-style: solid solid none solid;
     border-width: 1px;
     border-color: #f0d0f0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .node-viewer option:checked {
@@ -168,7 +222,7 @@ body {
 
 .node-viewer select {
     padding: 10px 8px 10px 8px;
-    margin: 10px 0px 10px 0px;
+    margin: 10px 0 10px 0;
     border: 2px solid darkmagenta;
     flex-grow: 1;
 }

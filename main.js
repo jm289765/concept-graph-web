@@ -124,6 +124,121 @@ class NodeList {
     }
 }
 
+class SearchBox {
+    constructor(searchElem, parent) {
+        /* searchElem is the search box's <label> element. it should have a child with the
+        * "search-input-wrapper" class and an <input> child with the "node-search-input" class.
+        *
+        * parent should be a NodeEditor object. */
+        if (searchElem === undefined || searchElem === null) {
+            // element does not exist
+            return
+        }
+
+        this.maxResultsAmount = 10
+        this.inputWrapper = searchElem.querySelector(".search-input-wrapper")
+        this.inputBox = searchElem.querySelector(".node-search-input")
+        this.searchResultsElem = document.createElement("div")
+        this.searchResults = {}
+
+        this.inputBox.oninput = () => this.updateHandler()
+        this.inputBox.onfocus = () => this.showSearchResults()
+        this.searchResultsElem.classList.add("search-results-list")
+        this.hideSearchResults()
+        this.inputWrapper.appendChild(this.searchResultsElem)
+
+        if (parent !== undefined && parent !== null) {
+            this.nodeEditor = parent
+        }
+
+        // hide search results when clicking outside it
+        document.addEventListener('click', (event) => {
+            // this event doesn't fire when a disabled element is clicked. so it doesn't
+            // always work when you have the root node loaded in a node editor.
+            // it's difficult to fix. you could try using readonly instead of disabled,
+            // but that allows users to still select the input boxes. also, the type select box
+            // would need to have all of its options disabled too.
+            if (!this.searchResultsVisible()) {
+                return
+            }
+
+            const withinBoundaries = event.composedPath().includes(this.inputWrapper)
+
+            if (!withinBoundaries) {
+                this.hideSearchResults()
+            }
+        })
+    }
+
+    async selectSearchItem(event) {
+        await this.nodeEditor.updateDisplayedNode(event.target.dataset["id"])
+        this.hideSearchResults()
+    }
+
+    appendSearchResultItem(id, text) {
+        const itemText = `[${id}] ${text}`
+        if (id in this.searchResults) {
+            this.searchResults[id].innerText = itemText
+            return
+        }
+
+        if (Object.keys(this.searchResults).length >= this.maxResultsAmount) {
+            return
+        }
+
+        const newItem = document.createElement("div")
+        newItem.classList.add("search-results-item")
+        newItem.innerText = itemText
+        newItem.setAttribute("title", itemText)
+        newItem.dataset["id"] = id
+
+        newItem.onclick = (event) => this.selectSearchItem(event)
+        this.searchResults[id] = newItem
+        this.searchResultsElem.appendChild(newItem)
+    }
+
+    async updateSearchResults() {
+        const res = await requests.search(this.inputBox.value)
+        // res is list of dicts of {id: x, title: y}
+
+        // remove previous results
+        this.searchResultsElem.innerHTML = ""
+        this.searchResults = []
+
+        for (let x of res) {
+            this.appendSearchResultItem(x.id, x.title)
+        }
+
+        this.showSearchResults()
+    }
+
+    updateHandler() {
+        const val = this.inputBox.value
+        const p = async () => {
+            if (val === this.inputBox.value) {
+                // value has not changed
+                await this.updateSearchResults()
+            }
+        }
+        // only update search results if value has not changed for 0.5 seconds
+        // this reduces the amount of requests made by a lot
+        setTimeout(p.bind(this), 500)
+    }
+
+    searchResultsVisible() {
+        /* returns true if search results are visible, false if not visible */
+        return this.searchResultsElem.style.display !== "none"
+    }
+
+    hideSearchResults() {
+        this.searchResultsElem.style.display = "none"
+    }
+
+    showSearchResults() {
+        this.searchResultsElem.style.display = "block"
+    }
+}
+
 class NodeEditor {
     // there's probably a better way to do this. maybe a NodeViewer class with two NodeEditor objects?
     static MainEditor = null
@@ -150,6 +265,7 @@ class NodeEditor {
             }
         }
 
+        this.searchBox = new SearchBox(editElem.querySelector(".search-input-label"), this)
         this.titleInput = editElem.querySelector(".node-title-input")
         this.tagsInput = editElem.querySelector(".node-tags-input")
         this.typeSelect = editElem.querySelector(".node-type-select")
@@ -219,8 +335,6 @@ class NodeEditor {
         if (this.lowerView.selectedIndex === -1)
             return
 
-        console.log(this.lowerView.options)
-        console.log(this.lowerView.selectedIndex)
         const lower = this.lowerView.options[this.lowerView.selectedIndex].value
         await requests.unlinkNode(this.selectedNode, lower)
         await NodeEditor.MainEditor.updateDisplayedNode()
@@ -372,8 +486,10 @@ class NodeEditor {
 
         function makeElem(nodeJSON) {
             const elem = document.createElement("option")
-            elem.innerText = `[#${nodeJSON.id}] ${nodeJSON.title}`
+            const elemText = `[#${nodeJSON.id}] ${nodeJSON.title}`
+            elem.innerText = elemText
             elem.value = nodeJSON.id
+            elem.setAttribute("title", elemText)
             // todo: add a class based on nodeJSON.type, and add css to color them
             return elem
         }
@@ -408,10 +524,11 @@ class NodeEditor {
                 continue
             }
 
-            if (x[0] === this.nodeList.selectedNode) {
+            // use == in case one id is a string and the other is a number
+            if (x[0] == this.nodeList.selectedNode) {
                 // selected node is source, target is successor
                 appendElem(this.lowerView, x[1])
-            } else if (x[1] === this.nodeList.selectedNode) {
+            } else if (x[1] == this.nodeList.selectedNode) {
                 // selected node is target, source is predecessor
                 appendElem(this.upperView, x[0])
             }
@@ -449,6 +566,7 @@ async function init() {
             if (!viewHistory.elem.firstChild)
                 viewHistory.elem.appendChild(await viewHistory.makeOption(id))
             else {
+                // in case one of these is an int and the other is a string.
                 if (viewHistory.elem.lastChild.value == id)
                     return
                 //viewHistory.elem.insertBefore(await viewHistory.makeOption(id), viewHistory.elem.firstChild)
