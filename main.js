@@ -31,14 +31,24 @@ class NodeList {
     }
 
     static nodesFromJSON(nodeJSON) {
+        /*
+        adds nodes from nodeJSON to the NodeList.
+
+        nodeJSON can be either a dict with a "nodes" key or a list of node jsons.
+
+        returns a list of ids of nodes that were loaded from nodeJSON.
+         */
         let njson = nodeJSON
         if ("nodes" in nodeJSON) {
             njson = nodeJSON["nodes"]
         }
 
+        const ret = []
         for (let node of njson) {
             NodeList.put(node.id, node)
+            ret.push(node.id)
         }
+        return ret
     }
 
     async get(id="0") {
@@ -121,6 +131,21 @@ class NodeList {
         NodeList.nodesFromJSON(n)
 
         return n
+    }
+
+    async createNode(type, title, content="", tags="", parent=0) {
+        /*
+        creates a new node and sends an addNode request to the server.
+
+        returns the id of the new node.
+         */
+        const newNodeJSON = await requests.addNode(type, title, content, tags, parent)
+        return NodeList.nodesFromJSON(newNodeJSON)[0]
+    }
+
+    async updateNode(id, attr, val) {
+        const updatedNodeJSON = await requests.updateNode(id, attr, val)
+        return NodeList.nodesFromJSON(updatedNodeJSON)[0]
     }
 }
 
@@ -287,14 +312,14 @@ class NodeEditor {
 
             newParentButton.onclick = async () => {
                 const selId = this.selectedNode
-                const newId = await requests.addNode("concept", "New Node")
+                const newId = await nodeList.createNode("concept", "New Node")
                 await requests.linkNode(newId, selId)
                 await this.updateDisplayedNode(newId)
             }
 
             newChildButton.onclick = async () => {
                 const selId = this.selectedNode
-                const newId = await requests.addNode("concept", "New Node")
+                const newId = await nodeList.createNode("concept", "New Node")
                 await requests.linkNode(selId, newId)
                 await this.updateDisplayedNode(newId)
             }
@@ -348,7 +373,7 @@ class NodeEditor {
         handles all things necessary to change the displayed node.
          */
 
-        // in case there are unsaved changes
+        // in case there are unsaved changes. updateAfter=false prevents an infinite loop.
         await this.saveButtonFunc(false)
 
         if (this.nodeList.selectedNode !== null && this === NodeEditor.MainEditor)
@@ -378,7 +403,6 @@ class NodeEditor {
 
         const node = await this.nodeList.get(this.nodeInput.value)
         if (node) {
-
             this.nodeIdLabel.innerText = node.id
             this.nodeList.selectedNode = node.id
             this.titleInput.value = node["title"]
@@ -424,29 +448,33 @@ class NodeEditor {
         let u = false
         if (this.titleInput.value !== node.title) {
             u = true
-            await requests.updateNode(nodeId, "title", this.titleInput.value)
+            await this.nodeList.updateNode(nodeId, "title", this.titleInput.value)
         }
 
         if (this.contentInput.value !== node.content) {
             u = true
-            await requests.updateNode(nodeId, "content", this.contentInput.value)
+            await this.nodeList.updateNode(nodeId, "content", this.contentInput.value)
         }
 
         if (this.tagsInput.value !== node["tags"]) {
             u = true
-            await requests.updateNode(nodeId, "tags", this.tagsInput.value)
+            await this.nodeList.updateNode(nodeId, "tags", this.tagsInput.value)
         }
 
         const type = this.typeSelect.options[this.typeSelect.selectedIndex].value
         if (type !== node.type) {
             u = true
-            await requests.updateNode(nodeId, "type", type)
+            await this.nodeList.updateNode(nodeId, "type", type)
         }
 
         if (u) {
             await this.nodeList.update(nodeId)
             if (updateAfter)
                 await NodeEditor.MainEditor.updateDisplayedNode() // update title in viewer list
+
+            // todo: if both editors have the same node, make sure they both update
+            //  e.g. if both have node 7 selected, and you update content in one, the other
+            //  content should update too
         }
     }
 
@@ -462,7 +490,7 @@ class NodeEditor {
         const ti = title || this.titleInput.value
         const co = content || this.contentInput.value
         const tags = this.tagsInput.value
-        const newNodeId = await requests.addNode(type, ti, co, tags, this.selectedNode || 0)
+        const newNodeId = await this.nodeList.createNode(type, ti, co, tags, this.selectedNode || 0)
         await this.updateDisplayedNode(newNodeId)
         if (this !== NodeEditor.MainEditor)
             await NodeEditor.MainEditor.updateDisplayedNode()
@@ -583,8 +611,7 @@ async function init() {
     //  update everything in the main editor (i.e. node viewer's titles) to reflect the new value
     const secNodeList = new NodeList()
     const secEditElem = document.getElementById("secondary-editor")
-    const secEdit = new NodeEditor(secEditElem, secNodeList)
-    NodeEditor.SecondaryEditor = secEdit
+    NodeEditor.SecondaryEditor = new NodeEditor(secEditElem, secNodeList)
 
     const updateSec = (event) => {
         const sel = event.target
