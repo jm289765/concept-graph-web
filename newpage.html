@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph Web App</title>
+</head>
+<body>
+<script type="module" src="main.js"></script>
+<script type="module" src="httprequests.js"></script>
+<link rel="stylesheet" href="styles.css" type="text/css">
+<div id="all-container">
+    <div class="node-viewer" id="node-viewer">
+        <div class="node-viewer-select-container">
+            <select class="node-viewer-upper-select" size="3"></select>
+            <div class="node-viewer-buttons">
+                <button class="unlink-upper-button node-viewer-button">Unlink Selected</button>
+                <button class="add-new-parent-button node-viewer-button">Create New Parent</button>
+            </div>
+        </div>
+        <div class="node-viewer-center-text">Selected</div>
+        <div class="node-viewer-select-container">
+            <div class="node-viewer-buttons">
+                <button class="unlink-lower-button">Unlink Selected</button>
+                <button class="add-new-child-button">Create New Child</button>
+            </div>
+            <select class="node-viewer-lower-select" size="3"></select>
+        </div>
+        <label id="view-history-label">Previous nodes: <select id="view-history-select"></select></label>
+    </div>
+    <div id="main-editor" class="node-editor">
+        <label class="search-input-label">
+            Search:
+            <div class="search-input-wrapper">
+                <input class="node-search-input">
+            </div>
+        </label>
+        <div>Selected ID: <span class="node-editor-id-label"></span></div>
+        <label class="title-editor-label">Title: <input class="node-title-input"></label>
+        <label class="tag-editor-label">Tags: <input class="node-tags-input"></label>
+        <label class="type-editor-label">
+            Type:
+            <select class="node-type-select">
+                <option value="concept" selected>Concept</option>
+                <option value="explanation">Explanation</option>
+                <option value="refutation">Refutation</option>
+                <option value="comment">Comment</option>
+                <option value="root" disabled hidden>root</option>
+            </select>
+        </label>
+        <label class="content-editor-label">Content: <textarea class="node-content-input" spellcheck="false"></textarea></label>
+        <div>
+            <button class="node-save-button">Save</button>
+            <button class="node-create-button">Create New</button>
+        </div>
+        <div class="node-input-container">
+            <label class="node-input-label">
+                Node ID:
+                <input class="node-id-input">
+                <button class="node-select-button">Select</button>
+            </label>
+        </div>
+    </div>
+    <div id="secondary-editor" class="node-editor">
+        <label class="search-input-label">
+            Search:
+            <div class="search-input-wrapper">
+                <input class="node-search-input">
+            </div>
+        </label>
+        <div>Selected ID: <span class="node-editor-id-label"></span></div>
+        <label class="title-editor-label">Title: <input class="node-title-input"></label>
+        <label class="tag-editor-label">Tags: <input class="node-tags-input"></label>
+        <label class="type-editor-label">
+            Type:
+            <select class="node-type-select">
+                <option value="concept" selected>Concept</option>
+                <option value="explanation">Explanation</option>
+                <option value="refutation">Refutation</option>
+                <option value="comment">Comment</option>
+                <option value="root" hidden>root</option>
+            </select>
+        </label>
+        <label class="content-editor-label">Content: <textarea class="node-content-input" spellcheck="false"></textarea></label>
+        <div>
+            <button class="node-save-button">Save</button>
+            <button class="node-create-button">Create New</button>
+        </div>
+        <div class="node-input-container">
+            <label class="node-input-label">
+                Node ID:
+                <input class="node-id-input">
+                <button class="node-select-button">Select</button>
+            </label>
+        </div>
+        <div>
+            <button class="link-parent-button">Link as Parent</button>
+            <button class="link-child-button">Link as Child</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
