@@ -11,19 +11,23 @@ class HttpRequests {
         params: dict of keys and values for request's params
         httpMethod: "GET", "POST", "PUT", etc
          */
+        let res
         try {
             const urlParams = new URLSearchParams(params).toString()
             const fullUrl = base_url + requestType + "?" + urlParams
-            const res = await fetch(fullUrl, {method: httpMethod})
-
-            if (res.headers.get("Content-type") === "text/json") {
-                return res.json()
-            } else {
-                return res.text()
-            }
+            res = await fetch(fullUrl, {method: httpMethod})
         } catch (e) {
             console.error(e)
-            return false
+            throw e
+        }
+
+        if (!res.ok)
+            throw new URIError(await res.text())
+
+        if (res.headers.get("Content-type") === "text/json") {
+            return await res.json()
+        } else {
+            return await res.text()
         }
     }
 
