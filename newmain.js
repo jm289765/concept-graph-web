@@ -143,9 +143,12 @@ class SearchBox {
             return
         }
 
-        this.maxResultsAmount = 10
         this.inputWrapper = searchElem.querySelector(".search-input-wrapper")
         this.inputBox = searchElem.querySelector(".node-search-input")
+        if (!this.inputWrapper || !this.inputBox)
+            return
+
+        this.maxResultsAmount = 10
         this.searchResultsElem = document.createElement("div")
         this.searchResults = {}
 
@@ -184,9 +187,8 @@ class SearchBox {
     }
 
     appendSearchResultItem(id, text) {
-        const itemText = `[${id}] ${text}`
         if (id in this.searchResults) {
-            this.searchResults[id].innerText = itemText
+            this.searchResults[id].innerText = text
             return
         }
 
@@ -196,8 +198,8 @@ class SearchBox {
 
         const newItem = document.createElement("div")
         newItem.classList.add("search-results-item")
-        newItem.innerText = itemText
-        newItem.setAttribute("title", itemText)
+        newItem.innerText = text
+        newItem.setAttribute("title", text)
         newItem.dataset["id"] = id
 
         newItem.onclick = (event) => this.selectSearchItem(event)
@@ -214,7 +216,7 @@ class SearchBox {
         this.searchResults = []
 
         for (let x of res) {
-            this.appendSearchResultItem(x.id, x.title)
+            this.appendSearchResultItem(x.id, getDisplayName(x))
         }
 
         this.showSearchResults()
@@ -324,7 +326,7 @@ class NodeViewer {
             return
         }
 
-        this.centerView.innerText = `[#${mainNode["id"]}] ${mainNode["title"]}`
+        this.centerView.innerText = getDisplayName(mainNode)
 
         const neighbors = await NodeList.getNeighbors(id)
 
@@ -333,7 +335,7 @@ class NodeViewer {
 
         function makeElem(nodeJSON) {
             const elem = document.createElement("option")
-            const elemText = `[#${nodeJSON.id}] ${nodeJSON.title}`
+            const elemText = getDisplayName(nodeJSON)
             elem.innerText = elemText
             elem.value = nodeJSON.id
             elem.setAttribute("title", elemText)
@@ -400,7 +402,6 @@ class NodeEditor {
         this.editElem = editElem
         this.nodeInput = editElem.querySelector(".node-id-input")
         this.nodeSelectButton = editElem.querySelector(".node-select-button")
-        this.nodeIdLabel = editElem.querySelector(".node-editor-id-label")
         this.nodeSelectButton.onclick = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onblur = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onkeydown = async (event) => {
@@ -409,8 +410,8 @@ class NodeEditor {
             }
         }
 
-        this.searchBox = new SearchBox(editElem.querySelector(".search-input-label"), this)
-        this.titleInput = editElem.querySelector(".node-title-input")
+        this.searchBox = new SearchBox(editElem, this)
+        this.titleInput = editElem.querySelector(".editor-title-input")
         this.tagsInput = editElem.querySelector(".node-tags-input")
         this.typeSelect = editElem.querySelector(".node-type-select")
         this.contentInput = editElem.querySelector(".node-content-input")
@@ -482,8 +483,8 @@ class NodeEditor {
 
         try {
             if (id === null || id === undefined) {
-                this.nodeIdLabel.innerText = "None"
                 this.titleInput.value = ""
+                this.titleInput.setAttribute("title", "")
                 this.tagsInput.value = ""
                 this.typeSelect.value = "concept"
                 this.contentInput.value = ""
@@ -497,6 +498,7 @@ class NodeEditor {
 
             if (this.nodeInput.value === "0") { // can't edit root node
                 this.titleInput.setAttribute("disabled", "")
+                this.titleInput.setAttribute("title", "")
                 this.tagsInput.setAttribute("disabled", "")
                 this.typeSelect.setAttribute("disabled", "")
                 this.typeSelect.options[this.typeSelect.options.length - 1].removeAttribute("disabled")
@@ -513,15 +515,13 @@ class NodeEditor {
 
             const node = await NodeList.get(id)
             if (node) {
-                //await this.setSelectedNode(node.id)
-                this.nodeIdLabel.innerText = node.id
-                this.titleInput.value = node["title"]
+                const dName = getDisplayName(node)
+                this.titleInput.value = dName
+                this.titleInput.setAttribute("title", dName)
                 this.tagsInput.value = node["tags"]
                 this.typeSelect.value = node["type"]
                 this.contentInput.value = node["content"]
             } else { // invalid node
-                //await this.setSelectedNode(null)
-                this.nodeIdLabel.innerText = "None"
                 this.titleInput.value = ""
                 this.tagsInput.value = ""
                 this.typeSelect.value = "concept"
@@ -551,9 +551,19 @@ class NodeEditor {
                 return
 
             let u = false
-            if (this.titleInput.value !== node.title) {
-                u = true
-                await NodeList.updateNode(nodeId, "title", this.titleInput.value)
+            if (this.titleInput.value !== getDisplayName(node)) {
+                let realTitle = this.titleInput.value
+                // hacky way to do this. shouldn't need to know that display name starts with "["
+                // and shouldn't need to know that the display name only adds text before the first space.
+                if (realTitle.startsWith("[")) {
+                    const firstSpace = realTitle.indexOf(" ")
+                    realTitle = realTitle.slice(firstSpace + 1)
+                }
+
+                if (realTitle !== node.title) {
+                    u = true
+                    await NodeList.updateNode(nodeId, "title", realTitle)
+                }
             }
 
             if (this.contentInput.value !== node.content) {
@@ -620,7 +630,7 @@ class ViewHistory {
         const opt = document.createElement("option")
         const node = await NodeList.get(id)
         opt.value = node.id
-        opt.innerText = `[${node.id}] ${node.title}`
+        opt.innerText = getDisplayName(node)
         return opt
     }
 
@@ -638,6 +648,14 @@ class ViewHistory {
             await this.elem.appendChild(await this.makeOption(id))
         }
     }
+}
+
+function getDisplayName(nodeObj) {
+    /* nodeObj: an object with attributes for "title" and "id".
+
+    return: formatted display name for the given node, e.g. "[#0] root"
+     */
+    return `[#${nodeObj["id"]}] ${nodeObj["title"]}`
 }
 
 let viewHistory

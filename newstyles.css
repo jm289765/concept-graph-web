@@ -7,13 +7,25 @@
 .col-6 {float: left; box-sizing: border-box; width: 75%;}
 .col-7 {float: left; box-sizing: border-box; width: 87.5%;}
 .col-8 {float: left; box-sizing: border-box; width: 100%;}
-.heading {height: 10%; border-style: solid solid none solid;}
-.content {height: 60%; border-style: solid;}
-.bottom {height: 30%; border-style: none solid solid solid;}
 
-.heading .content .bottom {
+.row-1 {box-sizing: border-box; height: 10%}
+.row-2 {box-sizing: border-box; height: 20%}
+.row-3 {box-sizing: border-box; height: 30%}
+.row-4 {box-sizing: border-box; height: 40%}
+.row-5 {box-sizing: border-box; height: 50%}
+.row-6 {box-sizing: border-box; height: 60%}
+.row-7 {box-sizing: border-box; height: 70%}
+.row-8 {box-sizing: border-box; height: 80%}
+.row-9 {box-sizing: border-box; height: 90%}
+.row-10 {box-sizing: border-box; height: 100%}
+
+.heading {border-style: solid solid none solid;}
+.content {border-style: solid;}
+.bottom {border-style: none solid solid solid;}
+
+.heading, .content, .bottom {
     background-color: white;
-    border-width: 1px;
+    border-width: 2px;
 }
 
 html {
@@ -47,40 +59,44 @@ div {
     background-color: white;
 }
 
+.editor-container *:disabled {
+    background-color: lavender;
+    color: black;
+}
+
 .editor-title-box {
     padding: 8px;
     display: flex;
 }
 
-.editor-title-text {
+.editor-title-input {
     margin: auto;
+    width: 100%;
     font-weight: bold;
     font-size: 1.2em;
+    text-align: center;
+    border: none;
+    resize: none;
 
-    /* limit to 2 lines */
+    /* limit to 2 lines for text blocks. unfortunately, doesn't work for <input> or <textarea>
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
+    overflow: hidden; */
+}
+
+.editor-title-input:hover {
+    border: 1px solid gray;
+}
+
+.editor-container-tags-type {
+    display: flex;
+    flex-direction: row;
 }
 
 /*
 BELOW THIS IS COPIED FROM OLD STYLES.CSS =============================================
  */
-
-
-html {
-    height: 100%;
-    display: flex;
-    background-color: lavender;
-    font-family: sans-serif;
-}
-
-body {
-    flex-grow: 1;
-    display: flex;
-    box-sizing: border-box;
-}
 
 #all-container {
     display: flex;
@@ -96,19 +112,12 @@ body {
     box-sizing: border-box;
     height: 100%;
     padding: 10px;
-    border-width: 5px 5px 5px 0;
-    border-style: solid;
-    border-color: darkmagenta;
 }
 
 .node-editor button, .node-editor input, .node-editor select {
     padding: 0.3em 5px 0.3em 5px;
     border: 1px solid darkorchid;
     background-color: white;
-}
-
-.node-editor *:disabled {
-    background-color: lavender;
 }
 
 .node-editor button:hover {
@@ -134,7 +143,6 @@ body {
 
 .search-input-wrapper {
     position: relative;
-    flex-grow: 1;
     margin-left: 5px;
     flex-direction: column;
     display: flex;
@@ -146,7 +154,7 @@ body {
 
 .search-results-list {
     position: absolute;
-    border: 1px solid darkmagenta;
+    border: none; /* or else empty search results will make a bar along the bottom of search box */
     top: 1.3em;
     width: 100%;
     margin: 0;
@@ -181,7 +189,9 @@ body {
 
 .tag-editor-label {
     display: flex;
-    flex-direction: column;
+    flex-grow: 1;
+    flex-direction: row;
+    padding-right: 10px;
 }
 
 .node-tags-input {
@@ -199,11 +209,14 @@ body {
     resize: none;
     font-family: sans-serif;
     flex-grow: 1;
+    border-style: inset;
 }
 
 .node-input-container {
+    margin: auto;
+    align-items: center;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
 }
 
 .node-input-container * {
@@ -211,13 +224,12 @@ body {
 }
 
 .node-viewer {
-    flex-grow: 1;
+    height: 100%;
     padding: 20px 40px 20px 30px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     background-color: white;
-    border: 5px solid darkmagenta;
 }
 
 .node-viewer-select-container {
@@ -296,7 +308,7 @@ body {
 }
 
 .node-viewer-center-text {
-    margin: 40px 10px 40px 10px;
+    margin: 10px;
     height: auto;
     border: 3px solid darkmagenta;
     background-color: darkmagenta;
@@ -309,7 +321,7 @@ body {
 
 #view-history-label {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     padding: 10px 5px 5px 5px;
 }
@@ -317,5 +329,5 @@ body {
 #view-history-select {
     box-sizing: border-box;
     margin: 0 0 0 5px;
-    flex-grow: 1;
+    width: 100%;
 }

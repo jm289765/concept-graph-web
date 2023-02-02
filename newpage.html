@@ -9,8 +9,8 @@
 <script type="module" src="httprequests.js"></script>
 <link rel="stylesheet" href="newstyles.css" type="text/css">
 <div class="col-2 list-container">
-    <div class="heading"></div>
-    <div class="content" id="node-viewer">
+    <div class="row-1 heading"></div>
+    <div class="row-6 content" id="node-viewer">
         <div class="node-viewer">
             <div class="node-viewer-select-container">
                 <select class="node-viewer-upper-select" size="3"></select>
@@ -29,57 +29,56 @@
             </div>
         </div>
     </div>
-    <div class="bottom">
+    <div class="row-3 bottom">
         <label id="view-history-label">Previous nodes: <select id="view-history-select"></select></label>
     </div>
 </div>
 <div class="col-3 editor-container" id="main-editor">
-    <div class="heading editor-title-box">
-        <div class="editor-title-text">Title 1</div>
+    <!-- todo: replace node-editor with editor-container -->
+
+    <div class="row-1 heading editor-title-box">
+        <textarea class="editor-title-input" placeholder="Title"></textarea>
     </div>
-    <div class="content">
+    <div class="row-8 content">
         <div class="node-editor">
-            <label class="search-input-label">
-                Search:
-                <div class="search-input-wrapper">
-                    <input class="node-search-input">
-                </div>
-            </label>
-            <div>Selected ID: <span class="node-editor-id-label"></span></div>
-            <label class="title-editor-label">Title: <input class="node-title-input"></label>
-            <label class="tag-editor-label">Tags: <input class="node-tags-input"></label>
-            <label class="type-editor-label">
-                Type:
-                <select class="node-type-select">
-                    <option value="concept" selected>Concept</option>
-                    <option value="explanation">Explanation</option>
-                    <option value="refutation">Refutation</option>
-                    <option value="comment">Comment</option>
-                    <!-- "root" should stay the last option in the list -->
-                    <option value="root" disabled hidden>root</option>
-                </select>
-            </label>
-            <label class="content-editor-label">Content: <textarea class="node-content-input" spellcheck="false"></textarea></label>
+            <!--
+            <div class="search-input-wrapper">
+                <input class="node-search-input" placeholder="Search...">
+            </div>
+            -->
+            <div class="editor-container-tags-type">
+            <label class="tag-editor-label"><input class="node-tags-input" placeholder="Tags..."></label>
+                <label class="type-editor-label">
+                    <select class="node-type-select">
+                        <option value="concept" selected>Concept</option>
+                        <option value="explanation">Explanation</option>
+                        <option value="refutation">Refutation</option>
+                        <option value="comment">Comment</option>
+                        <!-- "root" should stay the last option in the list -->
+                        <option value="root" disabled hidden>root</option>
+                    </select>
+                </label>
+            </div>
+            <label class="content-editor-label"><textarea class="node-content-input" spellcheck="false"></textarea></label>
             <div>
                 <button class="node-save-button">Save</button>
-                <button class="node-create-button">Create New</button>
-            </div>
-            <div class="node-input-container">
-                <label class="node-input-label">
-                    Node ID:
-                    <input class="node-id-input">
-                    <button class="node-select-button">Select</button>
-                </label>
             </div>
         </div>
     </div>
-    <div class="bottom"></div>
+    <div class="row-1 bottom node-input-container">
+            <label class="node-input-label">
+                Node ID:
+                <input class="node-id-input">
+                <button class="node-select-button">Select</button>
+                <button class="node-create-button">Create New</button>
+            </label>
+    </div>
 </div>
 <div class="col-3 editor-container" id="secondary-editor">
-    <div class="heading editor-title-box">
+    <div class="row-1 heading editor-title-box">
         <div class="editor-title-text">Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 Title 2 </div>
     </div>
-    <div class="content">
+    <div class="row-6 content">
         <div class="node-editor">
             <label class="search-input-label">
                 Search:
@@ -119,7 +118,7 @@
             </div>
         </div>
     </div>
-    <div class="bottom"></div>
+    <div class="row-3 bottom"></div>
 </div>
 </body>
 </html>
