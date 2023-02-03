@@ -75,6 +75,7 @@ class NodeList {
     static has(id) {
         /*
         returns true if the id is in the node list. be aware that NodeList.get(id) handles this automatically.
+        This still returns false if the node exists on the server but hasn't yet been requested or downloaded.
          */
         return id in NodeList._nodeList
     }
@@ -143,9 +144,9 @@ class SearchBox {
             return
         }
 
-        this.inputWrapper = searchElem.querySelector(".search-input-wrapper")
-        this.inputBox = searchElem.querySelector(".node-search-input")
-        if (!this.inputWrapper || !this.inputBox)
+        this.inputContainer = searchElem.querySelector(".search-container-input")
+        this.inputBox = searchElem.querySelector(".search-input")
+        if (!this.inputContainer || !this.inputBox)
             return
 
         this.maxResultsAmount = 10
@@ -156,7 +157,7 @@ class SearchBox {
         this.inputBox.onfocus = () => this.showSearchResults()
         this.searchResultsElem.classList.add("search-results-list")
         this.hideSearchResults()
-        this.inputWrapper.appendChild(this.searchResultsElem)
+        this.inputContainer.appendChild(this.searchResultsElem)
 
         if (parent !== undefined && parent !== null) {
             this.nodeEditor = parent
@@ -173,7 +174,7 @@ class SearchBox {
                 return
             }
 
-            const withinBoundaries = event.composedPath().includes(this.inputWrapper)
+            const withinBoundaries = event.composedPath().includes(this.inputContainer)
 
             if (!withinBoundaries) {
                 this.hideSearchResults()
@@ -255,13 +256,13 @@ class NodeViewer {
         this.editor = editor
 
         if (viewerElem !== null) {
-            this.upperView = viewerElem.querySelector(".node-viewer-upper-select")
-            this.centerView = viewerElem.querySelector(".node-viewer-center-text")
-            this.lowerView = viewerElem.querySelector(".node-viewer-lower-select")
-            const unlinkUpper = viewerElem.querySelector(".unlink-upper-button")
-            const unlinkLower = viewerElem.querySelector(".unlink-lower-button")
-            const newParentButton = viewerElem.querySelector(".add-new-parent-button")
-            const newChildButton = viewerElem.querySelector(".add-new-child-button")
+            this.upperView = viewerElem.querySelector(".viewer-select-upper")
+            this.centerView = viewerElem.querySelector(".viewer-text-center")
+            this.lowerView = viewerElem.querySelector(".viewer-select-lower")
+            const unlinkUpper = viewerElem.querySelector(".viewer-button-unlinkupper")
+            const unlinkLower = viewerElem.querySelector(".viewer-button-unlinklower")
+            const newParentButton = viewerElem.querySelector(".viewer-button-addparent")
+            const newChildButton = viewerElem.querySelector(".viewer-button-addchild")
 
             if (!this.editor) {
                 unlinkUpper.setAttribute("disabled", "")
@@ -273,14 +274,14 @@ class NodeViewer {
                     const selId = this.editor.selectedNode
                     const newId = await NodeList.createNode("concept", "New Node")
                     await requests.linkNode(newId, selId)
-                    editor.setSelectedNode(newId)
+                    await editor.setSelectedNode(newId)
                 }
 
                 newChildButton.onclick = async () => {
                     const selId = editor.selectedNode
                     const newId = await NodeList.createNode("concept", "New Node")
                     await requests.linkNode(selId, newId)
-                    editor.setSelectedNode(newId)
+                    await editor.setSelectedNode(newId)
                 }
 
                 // todo: some sort of history thing so that you can easily undo accidental unlinks. also confirmation dialog
@@ -398,10 +399,23 @@ class NodeEditor {
         takes an editor html div as input. see div with id "main-edit" for example.
          */
         this._selectedNode = null
-        this.viewer = new NodeViewer(viewerElem, this)
         this.editElem = editElem
-        this.nodeInput = editElem.querySelector(".node-id-input")
-        this.nodeSelectButton = editElem.querySelector(".node-select-button")
+
+        this.nodeInput = editElem.querySelector(".editor-input-id")
+        this.titleInput = editElem.querySelector(".editor-input-title")
+        this.tagsInput = editElem.querySelector(".editor-input-tags")
+        this.contentInput = editElem.querySelector(".editor-input-content")
+
+        this.typeSelect = editElem.querySelector(".editor-select-type")
+
+        this.nodeSelectButton = editElem.querySelector(".editor-button-select")
+        this.saveButton = editElem.querySelector(".editor-button-save")
+        this.createButton = editElem.querySelector(".editor-button-create")
+        this.linkParentButton = editElem.querySelector(".editor-button-linkparent")
+        this.linkChildButton = editElem.querySelector(".editor-button-linkchild")
+
+        this.viewer = new NodeViewer(viewerElem, this)
+
         this.nodeSelectButton.onclick = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onblur = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onkeydown = async (event) => {
@@ -410,18 +424,8 @@ class NodeEditor {
             }
         }
 
-        this.searchBox = new SearchBox(editElem, this)
-        this.titleInput = editElem.querySelector(".editor-title-input")
-        this.tagsInput = editElem.querySelector(".node-tags-input")
-        this.typeSelect = editElem.querySelector(".node-type-select")
-        this.contentInput = editElem.querySelector(".node-content-input")
-        this.saveButton = editElem.querySelector(".node-save-button")
         this.saveButton.onclick = () => this.saveButtonFunc()
-        this.createButton = editElem.querySelector(".node-create-button")
         this.createButton.onclick = () => this.createButtonFunc()
-
-        this.linkParentButton = editElem.querySelector(".link-parent-button")
-        this.linkChildButton = editElem.querySelector(".link-child-button")
 
         if (this.linkParentButton)
             this.linkParentButton.onclick = async () => {
@@ -456,6 +460,8 @@ class NodeEditor {
     async setSelectedNode(id) {
         /* sets id of currently selected node and calls the nodeupdate event */
 
+        // todo: check if id is invalid first, and make updateDisplayedNode check with NodeList.has() instead
+        //  of .get()
         if (id == this.selectedNode) // id can be either int or str, so use == instead of ===
             return
 
@@ -486,7 +492,7 @@ class NodeEditor {
                 this.titleInput.value = ""
                 this.titleInput.setAttribute("title", "")
                 this.tagsInput.value = ""
-                this.typeSelect.value = "concept"
+                this.typeSelect.value = "null"
                 this.contentInput.value = ""
                 return true
             }
@@ -524,7 +530,7 @@ class NodeEditor {
             } else { // invalid node
                 this.titleInput.value = ""
                 this.tagsInput.value = ""
-                this.typeSelect.value = "concept"
+                this.typeSelect.value = "null"
                 this.contentInput.value = ""
             }
 
@@ -664,12 +670,12 @@ async function init() {
     const nodeViewer = document.getElementById("node-viewer")
     const mainEdit = new NodeEditor(mainEditElem, nodeViewer)
 
-    document.getElementById("view-history-select").onchange = (event) => {
+    document.querySelector(".history-select").onchange = (event) => {
         NodeEditor.MainEditor.setSelectedNode(event.target.options[event.target.selectedIndex].value)
     }
 
     // viewHistory has to be set up before any node editor gets updated or displays a node
-    const viewerElem = document.getElementById("view-history-select")
+    const viewerElem = document.querySelector(".history-select")
     if (viewerElem)
         viewHistory = new ViewHistory(viewerElem)
 
@@ -680,6 +686,9 @@ async function init() {
 
     const secEditElem = document.getElementById("secondary-editor")
     NodeEditor.SecondaryEditor = new NodeEditor(secEditElem)
+
+    const searchBar = document.getElementById("search-bar")
+    const search = new SearchBox(searchBar, mainEdit)
 
     /*
     // todo: change all this to use nodeupdate events, then get rid of NodeEditor.MainEditor and SecondaryEditor

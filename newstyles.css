@@ -64,12 +64,12 @@ div {
     color: black;
 }
 
-.editor-title-box {
+.editor-container-title {
     padding: 8px;
     display: flex;
 }
 
-.editor-title-input {
+.editor-input-title {
     margin: auto;
     width: 100%;
     font-weight: bold;
@@ -85,7 +85,7 @@ div {
     overflow: hidden; */
 }
 
-.editor-title-input:hover {
+.editor-input-title:hover {
     border: 1px solid gray;
 }
 
@@ -98,14 +98,7 @@ div {
 BELOW THIS IS COPIED FROM OLD STYLES.CSS =============================================
  */
 
-#all-container {
-    display: flex;
-    flex-grow: 1;
-    flex-direction: row;
-    padding: 10px 10px 10px 10px;
-}
-
-.node-editor {
+.editor-container-body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -114,41 +107,79 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     padding: 10px;
 }
 
-.node-editor button, .node-editor input, .node-editor select {
+.editor-container-body button, .editor-container-body input, .editor-container-body select {
     padding: 0.3em 5px 0.3em 5px;
     border: 1px solid darkorchid;
     background-color: white;
 }
 
-.node-editor button:hover {
+.editor-container-body button:hover {
     background-color: darkmagenta;
     color: white;
 }
 
-.node-editor button:active {
+.editor-container-body button:active {
     background-color: darkorchid;
     color: white;
 }
 
-.node-editor div, .node-editor label {
+.editor-container-body div, .editor-container-body label {
     margin: 5px 0 5px 0;
 }
 
-.search-input-label {
+.editor-label-tag {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: row;
+    padding-right: 10px;
+}
+
+.editor-input-tags {
+    flex-grow: 1
+}
+
+.editor-label-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-input-content {
+    padding: 8px;
+    resize: none;
+    font-family: sans-serif;
+    flex-grow: 1;
+    border-style: inset;
+}
+
+.editor-container-id {
+    margin: auto;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-container-id * {
+    margin: auto 5px auto 5px;
+}
+
+.search-container {
     display: flex;
     flex-direction: row;
     width: 100%;
+    padding: 8px;
     align-items: center;
 }
 
-.search-input-wrapper {
+.search-container-input {
+    width: 100%;
+    box-sizing: border-box;
     position: relative;
-    margin-left: 5px;
     flex-direction: column;
     display: flex;
 }
 
-.node-search-input {
+.search-input {
     flex-grow: 1;
 }
 
@@ -164,7 +195,7 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     z-index: 25;
 }
 
-.node-editor .search-results-item {
+.search-container .search-results-item {
     margin: 5px 0 5px 0;
     padding: 5px;
     border: 2px solid darkmagenta;
@@ -174,56 +205,15 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     overflow: hidden;
 }
 
-.node-editor .search-results-item:hover {
+.search-container .search-results-item:hover {
     outline: 3px solid magenta;
 }
 
-.node-editor .search-results-item:active {
+.search-container .search-results-item:active {
     background-color: magenta;
 }
 
-.title-editor-label {
-    display: flex;
-    flex-direction: column;
-}
-
-.tag-editor-label {
-    display: flex;
-    flex-grow: 1;
-    flex-direction: row;
-    padding-right: 10px;
-}
-
-.node-tags-input {
-    flex-grow: 1
-}
-
-.content-editor-label {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.node-content-input {
-    padding: 8px;
-    resize: none;
-    font-family: sans-serif;
-    flex-grow: 1;
-    border-style: inset;
-}
-
-.node-input-container {
-    margin: auto;
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-}
-
-.node-input-container * {
-    margin: auto 5px auto 5px;
-}
-
-.node-viewer {
+.viewer-container {
     height: 100%;
     padding: 20px 40px 20px 30px;
     box-sizing: border-box;
@@ -232,7 +222,60 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     background-color: white;
 }
 
-.node-viewer-select-container {
+.viewer-container option {
+    border-style: solid solid none solid;
+    border-width: 1px;
+    border-color: #f0d0f0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.viewer-container option:checked {
+    background-color: lavender;
+}
+
+.viewer-container option:hover {
+    background-color: darkmagenta;
+    color: white
+}
+
+.viewer-container option[selected] {
+    /* doesn't work. unfortunately, i can't figure out how to set the
+    currently selected option's highlight color to not be the default blue.
+    option[selected] doesn't work.
+    *::selection and *::-moz-selection apply to other highlights, but not options.
+    option:focus doesn't work.
+     */
+    background-color: pink;
+}
+
+.viewer-container option:focus {
+    background-color: magenta;
+}
+
+.viewer-container select {
+    padding: 10px 8px 10px 8px;
+    margin: 10px 0 10px 0;
+    border: 2px solid darkmagenta;
+    flex-grow: 1;
+}
+
+.viewer-buttons {
+    display: flex;
+    flex-direction: row;
+}
+
+.viewer-buttons button {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: auto 10px auto 10px;
+    border: 2px solid darkmagenta;
+    background-color: white;
+    width: auto;
+}
+
+.viewer-container-select {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -244,70 +287,17 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     min-height: 75px;
 }
 
-.node-viewer option {
-    border-style: solid solid none solid;
-    border-width: 1px;
-    border-color: #f0d0f0;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-.node-viewer option:checked {
-    background-color: lavender;
-}
-
-.node-viewer option:hover {
-    background-color: darkmagenta;
-    color: white
-}
-
-.node-viewer option[selected] {
-    /* doesn't work. unfortunately, i can't figure out how to set the
-    currently selected option's highlight color to not be the default blue.
-    option[selected] doesn't work.
-    *::selection and *::-moz-selection apply to other highlights, but not options.
-    option:focus doesn't work.
-     */
-    background-color: pink;
-}
-
-.node-viewer option:focus {
-    background-color: magenta;
-}
-
-.node-viewer-buttons {
-    display: flex;
-    flex-direction: row;
-}
-
-.node-viewer-buttons button {
-    flex-grow: 1;
-    flex-basis: 0;
-    margin: auto 10px auto 10px;
-    border: 2px solid darkmagenta;
-    background-color: white;
-    width: auto;
-}
-
-.node-viewer-select-container button:hover {
+.viewer-container-select button:hover {
     background-color: darkmagenta;
     color: white;
 }
 
-.node-viewer-select-container button:active {
+.viewer-container-select button:active {
     background-color: darkorchid;
     color: white;
 }
 
-.node-viewer select {
-    padding: 10px 8px 10px 8px;
-    margin: 10px 0 10px 0;
-    border: 2px solid darkmagenta;
-    flex-grow: 1;
-}
-
-.node-viewer-center-text {
+.viewer-text-center {
     margin: 10px;
     height: auto;
     border: 3px solid darkmagenta;
@@ -319,14 +309,14 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
     min-height: 19px;
 }
 
-#view-history-label {
+.history-label {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 10px 5px 5px 5px;
 }
 
-#view-history-select {
+.history-select {
     box-sizing: border-box;
     margin: 0 0 0 5px;
     width: 100%;
