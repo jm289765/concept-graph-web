@@ -237,17 +237,20 @@ class SearchBox {
 class NodeViewer {
     /* viewerElem: the HTMLElement that contains this nodeViewer
 
+    editor: NodeEditor that this NodeViewer displays the parents and children of
+
     editors: list of NodeEditors that this viewer's items can be opened in.
 
     title: title of this NodeViewer
      */
-    constructor(viewerElem, editors, title) {
+    constructor(viewerElem, editor, editors) {
         this.viewerElem = viewerElem
+        this.editor = editor
         this.editors = editors
 
-        this.catContainer = new UIList(title, viewerElem, "rebeccapurple")
-        const p = new UIList("Parents", this.catContainer.elem, "lavender")
-        const c = new UIList("Children", this.catContainer.elem, "lavender")
+        this.catContainer = new UIList("", viewerElem, "rebeccapurple")
+        const p = new UIList("Parents", this.catContainer.elem, "mediumslateblue")
+        const c = new UIList("Children", this.catContainer.elem, "palevioletred")
         this.catContainer.addElem(p.elem)
         this.catContainer.addElem(c.elem)
 
@@ -255,17 +258,62 @@ class NodeViewer {
             "parents": p,
             "children": c
         }
+
+        this.displayedID = null
+
+        editor.addEventListener("nodeupdate", (e) => {
+            this.updateDisplay(e.detail)
+        })
+    }
+
+    get title() {
+        return this._title
+    }
+
+    set title(value) {
+        this._title = value
+        // update title elem
+        this.catContainer.titleElem.innerText = value
+    }
+
+    get displayedID() {
+        return this._displayedID
+    }
+
+    set displayedID(value) {
+        this._displayedID = value
+        if (value === null)
+            this.title = `Editor ${this.editor.id}`
+        else
+            this.title = `Editor ${this.editor.id} [#${value}]`
     }
 
     async updateDisplay(id) {
-        const addItem = (category, node) => {
+        const unlinkFunc = (parent, child) => (evt) => {
+            this.editor.unlink(parent, child)
+            this.updateDisplay(id)
+        }
+
+        const addItem = (category, node, unlinker) => {
+            /* unlinker: event handler that unlinks this item from the editor item */
             const i = new ViewerItem(node, this.editors)
+
+            if (unlinker) {
+                const unlink = document.createElement("div")
+                unlink.classList.add("viewer-item-button")
+                unlink.innerText = "X"
+                unlink.title = "Unlink this node"
+                unlink.onclick = unlinker
+                i.buttonContainer.appendChild(unlink)
+            }
+
             this.categories[category].addElem(i)
         }
 
         const neighbors = await NodeList.getNeighbors(id)
+        if (!neighbors) return
 
-        this.clearDisplay()
+        this.clearDisplay() // do this after getting neighbors so that the user doesn't see the cleared display
 
         const nodes = {}
         for (let x of neighbors["nodes"]) {
@@ -278,9 +326,15 @@ class NodeViewer {
 
             if (x[0] === x[1]) {
                 if (circle) continue
-                // so that edges to itself won't put two copies in this.lowerView
-                addItem("parents", nodes[x[0]])
-                addItem("children", nodes[x[0]])
+                // so that an edge to itself won't put two copies in parents or children
+                const n = nodes[x[0]]
+                let uf
+                if (x[0] == "0")
+                    uf = () => {}
+                else
+                    uf = unlinkFunc(n.id, n.id)
+                addItem("parents", n, uf)
+                addItem("children", n, uf)
                 circle = true
                 continue
             }
@@ -288,45 +342,52 @@ class NodeViewer {
             // use == in case one id is a string and the other is a number
             if (x[0] == id) {
                 // selected node is source, target is successor
-                addItem("children", nodes[x[1]])
+                addItem("children", nodes[x[1]], unlinkFunc(id, nodes[x[1]].id))
             } else if (x[1] == id) {
                 // selected node is target, source is predecessor
-                addItem("parents", nodes[x[0]])
+                addItem("parents", nodes[x[0]], unlinkFunc(nodes[x[0]].id, id))
             }
         }
+
+        this.displayedID = id
     }
 
     clearDisplay() {
         for (let c of Object.keys(this.categories)) {
             this.categories[c].clear()
         }
+        this.displayedID = null
     }
 }
 
 class NodeEditor {
-    // there's probably a better way to do this. maybe a NodeViewer class with two NodeEditor objects?
-    static MainEditor = null
-    static SecondaryEditor = null
 
-    constructor(editElem) {
+    constructor(editElem, id) {
         /*
-        takes an editor html div as input. see div with id "main-edit" for example.
+        editElem: an editor html div. see div with id "editor-1" for example.
          */
         this._selectedNode = null
+        this._id = id
         this.editElem = editElem
+        this.targetEditor = null
 
-        this.nodeInput = editElem.querySelector(".editor-input-id")
         this.titleInput = editElem.querySelector(".editor-input-title")
         this.tagsInput = editElem.querySelector(".editor-input-tags")
+        this.typeSelect = editElem.querySelector(".editor-select-type")
         this.contentInput = editElem.querySelector(".editor-input-content")
 
-        this.typeSelect = editElem.querySelector(".editor-select-type")
+        this.linkParentButton = editElem.querySelector(".editor-button-linkparent")
+        this.newParentButton = editElem.querySelector(".editor-button-newparent")
+        this.linkChildButton = editElem.querySelector(".editor-button-linkchild")
+        this.newChildButton = editElem.querySelector(".editor-button-newchild")
+        // not used: unlink buttons. but they're implemented if you ever do want to use them
+        this.unlinkParentButton = editElem.querySelector(".editor-button-unlinkparent")
+        this.unlinkChildButton = editElem.querySelector(".editor-button-unlinkchild")
 
+        this.nodeInput = editElem.querySelector(".editor-input-id")
         this.nodeSelectButton = editElem.querySelector(".editor-button-select")
         this.saveButton = editElem.querySelector(".editor-button-save")
         this.createButton = editElem.querySelector(".editor-button-create")
-        this.linkParentButton = editElem.querySelector(".editor-button-linkparent")
-        this.linkChildButton = editElem.querySelector(".editor-button-linkchild")
 
         this.nodeSelectButton.onclick = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onblur = async () => await this.setSelectedNode(this.nodeInput.value)
@@ -339,20 +400,22 @@ class NodeEditor {
         this.saveButton.onclick = () => this.saveButtonFunc()
         this.createButton.onclick = () => this.createButtonFunc()
 
-        if (this.linkParentButton)
-            this.linkParentButton.onclick = async () => {
-                await requests.linkNode(this.nodeInput.value, NodeEditor.MainEditor.selectedNode)
-                await this.updateDisplayedNode() // is this necessary? idk.
-                await NodeEditor.MainEditor.updateDisplayedNode()
+        if (this.newParentButton)
+            this.newParentButton.onclick = async () => {
+                const newId = await requests.addNode()
+                await requests.linkNode(newId, this.selectedNode)
+                await this.setSelectedNode(newId)
             }
 
-        if (this.linkChildButton)
-            this.linkChildButton.onclick = async () => {
-                await requests.linkNode(NodeEditor.MainEditor.selectedNode, this.nodeInput.value)
-                await this.updateDisplayedNode()
-                await NodeEditor.MainEditor.updateDisplayedNode()
+        if (this.newChildButton)
+            this.newChildButton.onclick = async () => {
+                const newId = await requests.addNode(parent=this.selectedNode)
+                await this.setSelectedNode(newId)
             }
     }
+
+    get id() { return this._id }
+    set id(value) { return false }
 
     addEventListener(type, callback, options) {
         /* NodeEditor objects have a "nodeupdate" event that fires whenever the selected node
@@ -387,6 +450,32 @@ class NodeEditor {
 
         const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
         this.editElem.dispatchEvent(ev)
+    }
+
+    setTarget(target) {
+        /* target: a NodeEditor. the target of this editor's actions. This is used by the "Link as Parent" and
+        "Link as Child" and corresponding "Unlink ..." buttons. */
+        this.targetEditor = target
+
+        if (this.linkParentButton)
+            this.linkParentButton.onclick = async () => {
+                await this.link(this.selectedNode, this.targetEditor.selectedNode)
+            }
+
+        if (this.unlinkParentButton)
+            this.unlinkParentButton.onclick = async () => {
+                await this.unlink(this.selectedNode, this.targetEditor.selectedNode)
+            }
+
+        if (this.linkChildButton)
+            this.linkChildButton.onclick = async () => {
+                await this.link(this.targetEditor.selectedNode, this.selectedNode)
+            }
+
+        if (this.unlinkChildButton)
+            this.unlinkChildButton.onclick = async () => {
+                await this.unlink(this.targetEditor.selectedNode, this.selectedNode)
+            }
     }
 
     async updateDisplayedNode() {
@@ -432,9 +521,8 @@ class NodeEditor {
 
             const node = await NodeList.get(id)
             if (node) {
-                const dName = getDisplayName(node)
-                this.titleInput.value = dName
-                this.titleInput.setAttribute("title", dName)
+                this.titleInput.value = node["title"]
+                this.titleInput.setAttribute("title", getDisplayName(node))
                 this.tagsInput.value = node["tags"]
                 this.typeSelect.value = node["type"]
                 this.contentInput.value = node["content"]
@@ -445,16 +533,13 @@ class NodeEditor {
                 this.contentInput.value = ""
             }
 
-            if (this.viewer) {
-                await this.viewer.updateDisplay(id)
-            }
             return true
         } catch (e) {
             console.log(e)
         }
     }
 
-    async saveButtonFunc(updateAfter=true) {
+    async saveButtonFunc() {
         /*
         tell the server to set the selected node's attributes to the values in
         the editor boxes. if the values are already accurate, no change.
@@ -468,22 +553,11 @@ class NodeEditor {
                 return
 
             let u = false
-            if (this.titleInput.value !== getDisplayName(node)) {
-                let realTitle = this.titleInput.value
-                // hacky way to do this. shouldn't need to know that display name starts with "["
-                // and shouldn't need to know that the display name only adds text before the first space.
-                if (realTitle.startsWith("[")) {
-                    const firstSpace = realTitle.indexOf(" ")
-                    realTitle = realTitle.slice(firstSpace + 1)
-                }
-
-                if (realTitle !== node.title) {
-                    u = true
+            if (this.titleInput.value !== node["title"]) {
                     await NodeList.updateNode(nodeId, "title", realTitle)
-                }
             }
 
-            if (this.contentInput.value !== node.content) {
+            if (this.contentInput.value !== node["content"]) {
                 u = true
                 await NodeList.updateNode(nodeId, "content", this.contentInput.value)
             }
@@ -494,15 +568,13 @@ class NodeEditor {
             }
 
             const type = this.typeSelect.options[this.typeSelect.selectedIndex].value
-            if (type !== node.type) {
+            if (type !== node["type"]) {
                 u = true
                 await NodeList.updateNode(nodeId, "type", type)
             }
 
             if (u) {
                 await NodeList.update(nodeId)
-                if (updateAfter)
-                    await NodeEditor.MainEditor.updateDisplayedNode() // update title in viewer list
 
                 // todo: if both editors have the same node, make sure they both update
                 //  e.g. if both have node 7 selected, and you update content in one, the other
@@ -529,12 +601,34 @@ class NodeEditor {
             const tags = this.tagsInput.value
             const newNodeId = await NodeList.createNode(type, ti, co, tags, this.selectedNode || 0)
             await this.setSelectedNode(newNodeId)
-            if (this !== NodeEditor.MainEditor)
-                await NodeEditor.MainEditor.updateDisplayedNode()
             return newNodeId
         } catch (e) {
             console.log(e)
         }
+    }
+
+    async link(parent, child) {
+        /* parent, child: ids of parent and child to link. one of these has to be this editor's selected id.
+        *
+        * this function links the given nodes and fires the nodeupdate event */
+        if (parent != this.selectedNode && child != this.selectedNode) return
+
+        await requests.linkNode(parent, child)
+
+        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
+        this.editElem.dispatchEvent(ev)
+    }
+
+    async unlink(parent, child) {
+        /* parent, child: ids of parent and child to unlink. one of these has to be this editor's selected id.
+        *
+        * this function unlinks the given nodes and fires the nodeupdate event */
+        if (parent != this.selectedNode && child != this.selectedNode) return
+
+        await requests.unlinkNode(parent, child)
+
+        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
+        this.editElem.dispatchEvent(ev)
     }
 }
 
@@ -679,7 +773,7 @@ class ViewerItem {
     makeEditorButton(editorID, editor) {
         // make button elem, add to a button container
         const button = document.createElement("div")
-        button.classList.add("viewer-item-button-editor")
+        button.classList.add("viewer-item-button")
         button.innerText = editorID
         button.title = `Open in Editor ${editorID}`
 
@@ -707,11 +801,11 @@ async function init() {
     const viewerElem = document.getElementById("viewers-container")
     const historyElem = document.getElementById("history-container")
 
-    const mainEdit = new NodeEditor(mainEditElem)
-    const secEdit = new NodeEditor(secEditElem)
+    const mainEdit = new NodeEditor(mainEditElem, 1)
+    const secEdit = new NodeEditor(secEditElem, 2)
+    mainEdit.setTarget(secEdit)
+    secEdit.setTarget(mainEdit)
 
-    NodeEditor.MainEditor = mainEdit
-    NodeEditor.SecondaryEditor = secEdit
     const editors = [mainEdit, secEdit]
 
     // viewHistory has to be set up before any node editor gets updated or displays a node
@@ -724,42 +818,26 @@ async function init() {
             const viewerContainer = document.createElement("div")
             viewerContainer.classList.add("viewer-container")
             viewerElem.appendChild(viewerContainer)
-            const title = `Editor ${Number(idx) + 1}`
 
-            const viewer = new NodeViewer(viewerContainer, editors, title)
-            editors[idx].addEventListener("nodeupdate", (e) => {
-                viewer.updateDisplay(e.detail)
-            })
+            const viewer = new NodeViewer(viewerContainer, editors[idx], editors)
+
+            for (let idx2 in editors) {
+                if (idx2 !== idx) {
+                    editors[idx2].addEventListener("nodeupdate", (e) =>{
+                        // in case the nodeupdate changes a parent or child title or link status
+                        viewer.updateDisplay(viewer.displayedID)
+                    })
+                }
+            }
         }
     }
 
     if (searchElem) {
-        const search = new SearchBox(searchElem, editors)
+        new SearchBox(searchElem, editors)
     }
 
-    await NodeList.update(0) // retrieve root node from server
     await mainEdit.setSelectedNode(0)
     await secEdit.setSelectedNode(null)
-
-    /*
-    // todo: change all this to use nodeupdate events, then get rid of NodeEditor.MainEditor and SecondaryEditor
-    const updateSec = (event) => {
-        const sel = event.target
-        NodeEditor.SecondaryEditor.updateDisplayedNode(sel.options[sel.selectedIndex].value)
-    }
-    const enterEvent = (event) => {
-        // for keyboard navigation of viewer's parents and children lists
-        if (event.key === "Enter") {
-            const sel = event.target
-            NodeEditor.MainEditor.updateDisplayedNode(sel.options[sel.selectedIndex].value)
-        }
-    }
-
-    NodeEditor.MainEditor.viewerElem.upperView.addEventListener("change", updateSec)
-    NodeEditor.MainEditor.viewerElem.lowerView.addEventListener("change", updateSec)
-    NodeEditor.MainEditor.viewerElem.upperView.addEventListener("keydown", enterEvent)
-    NodeEditor.MainEditor.viewerElem.lowerView.addEventListener("keydown", enterEvent)
-    // */
 }
 
 init()

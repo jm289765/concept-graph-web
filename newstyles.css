@@ -190,7 +190,7 @@ div {
     font-size: 0;
 }
 
-.viewer-item-button-editor {
+.viewer-item-button {
     display: inline-block;
     height: 14px;
     width: 14px;
@@ -201,8 +201,12 @@ div {
     user-select: none;
 }
 
-.viewer-item-button-editor:hover {
+.viewer-item-button:hover {
     background-color: lavender;
+}
+
+.viewer-item-button:active {
+    background-color: darkmagenta;
 }
 
 .history-text-title {
