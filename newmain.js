@@ -503,6 +503,7 @@ class NodeEditor {
             this.nodeInput.value = id
 
             if (this.nodeInput.value === "0") { // can't edit root node
+                // todo: disable parent and child link and create buttons
                 this.titleInput.setAttribute("disabled", "")
                 this.titleInput.setAttribute("title", "")
                 this.tagsInput.setAttribute("disabled", "")

@@ -1,4 +1,25 @@
 
+/* everything */
+
+* {
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+div[class*="col-"] {
+    border: none;
+    background-color: lavender;
+    height: 100%;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+div {
+    background-color: white;
+}
+
+/* page layout: .row-, .col, .heading/.content/.bottom, <html>, <body> */
+
 .col-1 {float: left; box-sizing: border-box; width: 12.5%;}
 .col-2 {float: left; box-sizing: border-box; width: 25%;}
 .col-3 {float: left; box-sizing: border-box; width: 37.5%;}
@@ -44,27 +65,35 @@ body {
     background-color: lavender;
 }
 
-* {
-    box-sizing: border-box;
-    font-family: sans-serif;
-}
-
-div[class*="col-"] {
-    border: none;
-    background-color: lavender;
-    height: 100%;
-    padding-left: 4px;
-    padding-right: 4px;
-}
-
-div {
-    background-color: white;
-}
+/* node editor */
 
 .editor-container *:disabled {
     background-color: lavender;
     color: black;
 }
+
+.editor-container button, .editor-container input, .editor-container select {
+    padding: 0.3em 5px 0.3em 5px;
+    border: 1px solid black;
+    background-color: white;
+}
+
+.editor-container button:hover {
+    background-color: lavender;
+}
+
+.editor-container button:active {
+    background-color: darkmagenta;
+    color: white;
+}
+
+.editor-container button:disabled {
+    /* override button:active style */
+    background-color: lavender;
+    color: black;
+}
+
+/* editor title */
 
 .editor-container-title {
     padding: 8px;
@@ -91,10 +120,85 @@ div {
     border: 1px solid gray;
 }
 
+/* editor body */
+
+.editor-container-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 10px;
+}
+
+.editor-container-body div, .editor-container-body label {
+    margin: 5px 0 5px 0;
+}
+
+/* editor tags and type select */
+
 .editor-container-tags-type {
     display: flex;
     flex-direction: row;
 }
+
+.editor-label-tag {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: row;
+    padding-right: 10px;
+}
+
+.editor-input-tags {
+    flex-grow: 1
+}
+
+/* editor content input */
+
+.editor-label-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-input-content {
+    padding: 8px;
+    resize: none;
+    font-family: sans-serif;
+    flex-grow: 1;
+    border: 2px inset lavender;
+}
+
+/* editor id input and buttons */
+
+.editor-container-id {
+    margin: auto;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+}
+
+.editor-container-id * {
+    margin: auto 5px auto 5px;
+}
+
+.editor-container-id button {
+    background-color: lavender;
+}
+
+.editor-container-id button:hover {
+    background-color: white;
+}
+
+.editor-label-id {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* UIList */
 
 .uilist-container {
     /* div with a text elem then indented parts */
@@ -113,6 +217,8 @@ div {
 .uilist-text-title {
     user-select: none;
 }
+
+/* search bar */
 
 .search-container {
     display: flex;
@@ -142,11 +248,13 @@ div {
     max-height: 50vh;
 }
 
-#viewers-container, #history-container {
+/* node viewer */
+
+#viewers-container {
     overflow-y:auto;
 }
 
-.viewer-container, .history-container {
+.viewer-container {
     /* right side has extra margin because scrollbar */
     padding: 20px 12px 20px 8px;
     box-sizing: border-box;
@@ -154,6 +262,8 @@ div {
     flex-direction: column;
     background-color: white;
 }
+
+/* viewer UIList items */
 
 .viewer-item {
     display: flex;
@@ -207,6 +317,22 @@ div {
 
 .viewer-item-button:active {
     background-color: darkmagenta;
+    color: white;
+}
+
+/* history view */
+
+#history-container {
+    overflow-y:auto;
+}
+
+.history-container {
+    /* right side has extra margin because scrollbar */
+    padding: 20px 12px 20px 8px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
 }
 
 .history-text-title {
@@ -215,74 +341,4 @@ div {
     top: 0;
     padding: 10px 10px 10px 10px;
     border: 2px solid black;
-}
-
-
-/*
-BELOW THIS IS COPIED FROM OLD STYLES.CSS =============================================
- */
-
-.editor-container-body {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    height: 100%;
-    padding: 10px;
-}
-
-.editor-container-body button, .editor-container-body input, .editor-container-body select {
-    padding: 0.3em 5px 0.3em 5px;
-    border: 1px solid darkorchid;
-    background-color: white;
-}
-
-.editor-container-body button:hover {
-    background-color: darkmagenta;
-    color: white;
-}
-
-.editor-container-body button:active {
-    background-color: darkorchid;
-    color: white;
-}
-
-.editor-container-body div, .editor-container-body label {
-    margin: 5px 0 5px 0;
-}
-
-.editor-label-tag {
-    display: flex;
-    flex-grow: 1;
-    flex-direction: row;
-    padding-right: 10px;
-}
-
-.editor-input-tags {
-    flex-grow: 1
-}
-
-.editor-label-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.editor-input-content {
-    padding: 8px;
-    resize: none;
-    font-family: sans-serif;
-    flex-grow: 1;
-    border-style: inset;
-}
-
-.editor-container-id {
-    margin: auto;
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-}
-
-.editor-container-id * {
-    margin: auto 5px auto 5px;
 }
