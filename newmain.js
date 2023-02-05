@@ -282,7 +282,7 @@ class NodeViewer {
     async updateDisplay(id) {
         const addItem = (category, node) => {
             const i = new ViewerItem(node, this.editors)
-            this.categories[category].addElem(i.elem)
+            this.categories[category].addElem(i)
         }
 
         const neighbors = await NodeList.getNeighbors(id)
@@ -431,8 +431,7 @@ class NodeEditor {
                 return true
             }
 
-            if (this === NodeEditor.MainEditor)
-                await viewHistory.add(id)
+            await viewHistory.add(id)
 
             this.nodeInput.value = id
 
@@ -562,30 +561,36 @@ class NodeEditor {
 }
 
 class ViewHistory {
-    constructor(historyElem) {
-        this.elem = historyElem
+    constructor(container, editors) {
+        this.container = container
+        this.editors = editors
+        this._lastAdded = null
+
+        this.titleElem = document.createElement("div")
+        this.titleElem.classList.add("history-text-title")
+        this.titleElem.innerText = "Previously Viewed"
+        this.container.appendChild(this.titleElem)
+
+        this.listContainer = document.createElement("div")
+        this.listContainer.classList.add("history-container")
+        this.container.appendChild(this.listContainer)
+
+        this.list = new UIList("", this.listContainer, "rebeccapurple")
     }
 
-    async makeOption(id) {
-        const opt = document.createElement("option")
-        const node = await NodeList.get(id)
-        opt.value = node.id
-        opt.innerText = getDisplayName(node)
-        return opt
-    }
-
+    /* adds node with given id to the view history list */
     async add(id) {
-        if (this.elem.children.length > 100)
-            this.elem.firstChild.remove()
+        if (id == this._lastAdded) {
+            return
+        }
 
-        if (!this.elem.firstChild)
-            await this.elem.appendChild(await this.makeOption(id))
-        else {
-            // in case one of these is an int and the other is a string.
-            if (this.elem.lastChild.value == id)
-                return
-            //viewHistory.elem.insertBefore(await viewHistory.makeOption(id), viewHistory.elem.firstChild)
-            await this.elem.appendChild(await this.makeOption(id))
+        const node = await NodeList.get(id)
+        if (node) {
+            const listItem = new ViewerItem(node, this.editors)
+            this.list.addElem(listItem)
+            this.list.truncate(100)
+            this.container.scrollTop = this.container.scrollHeight
+            this._lastAdded = id
         }
     }
 }
@@ -604,17 +609,17 @@ class UIList {
         this.elem.style.backgroundColor = sideColor
         container.appendChild(this.elem)
 
-        const catTitle = document.createElement("div")
-        catTitle.classList.add("uilist-text-title")
-        catTitle.innerHTML = this.title
-        this.elem.appendChild(catTitle)
+        this.titleElem = document.createElement("div")
+        this.titleElem.classList.add("uilist-text-title")
+        this.titleElem.innerHTML = this.title
+        this.elem.appendChild(this.titleElem)
 
         this.innerList = document.createElement("div")
         this.innerList.classList.add("uilist-container-inner")
         this.elem.appendChild(this.innerList)
 
-        catTitle.addEventListener("click", (evt) => {
-            if (evt.target === catTitle) // so that we don't double toggle
+        this.titleElem.addEventListener("click", (evt) => {
+            if (evt.target === this.titleElem) // so that we don't double toggle
                 this.toggleVisibility()
         })
         this.elem.addEventListener("click", (evt) => {
@@ -625,12 +630,13 @@ class UIList {
 
     /* adds an element to this UIList's display
 
-    elem: an HTMLElement or a UIList */
+    elem: an HTMLElement or a UIList or a ViewerItem */
     addElem(elem) {
         if (elem instanceof UIList) {
             this.innerList.appendChild(elem.elem)
-        }
-        else {
+        } else if (elem instanceof ViewerItem) {
+            this.innerList.appendChild(elem.elem)
+        } else {
             this.innerList.appendChild(elem)
         }
     }
@@ -638,6 +644,19 @@ class UIList {
     /* clears the UIList so that it no longer contains or displays any elements. */
     clear() {
         this.innerList.innerHTML = ""
+    }
+
+    /* shortens the UIList so that it has, at most, maxSize items. Removes from the front of the list,
+    i.e. removes the earliest items that were added. */
+    truncate(maxSize) {
+        if (maxSize === 0) {
+            this.clear()
+            return
+        }
+
+        while (this.innerList.children.length > maxSize) {
+            this.innerList.removeChild(this.innerList.firstChild)
+        }
     }
 
     /* toggles visibility of this list. The list's title remains visible. */
@@ -704,27 +723,25 @@ function getDisplayName(nodeObj) {
 
 let viewHistory
 async function init() {
-    const mainEditElem = document.getElementById("main-editor")
-    const secEditElem = document.getElementById("secondary-editor")
-    const viewerElem = document.getElementById("viewers-container")
+    const mainEditElem = document.getElementById("editor-1")
+    const secEditElem = document.getElementById("editor-2")
     const searchBar = document.getElementById("search-bar")
-    const historyElem = document.querySelector(".history-select")
+    const viewerElem = document.getElementById("viewers-container")
+    const historyElem = document.getElementById("history-container")
 
     const mainEdit = new NodeEditor(mainEditElem)
+    const secEdit = new NodeEditor(secEditElem)
+
+    NodeEditor.MainEditor = mainEdit
+    NodeEditor.SecondaryEditor = secEdit
+    const editors = [mainEdit, secEdit]
 
     // viewHistory has to be set up before any node editor gets updated or displays a node
     if (historyElem) {
-        viewHistory = new ViewHistory(historyElem)
-        historyElem.onchange = (event) => {
-            NodeEditor.MainEditor.setSelectedNode(event.target.options[event.target.selectedIndex].value)
-        }
+        viewHistory = new ViewHistory(historyElem, editors)
     }
 
-    NodeEditor.MainEditor = mainEdit
-    NodeEditor.SecondaryEditor = new NodeEditor(secEditElem)
-
     if (viewerElem) {
-        const editors = [mainEdit, NodeEditor.SecondaryEditor]
         for (let idx in editors) {
             const viewerContainer = document.createElement("div")
             viewerContainer.classList.add("viewer-container")
@@ -742,7 +759,7 @@ async function init() {
 
     await NodeList.update(0) // retrieve root node from server
     await mainEdit.setSelectedNode(0)
-    await NodeEditor.SecondaryEditor.setSelectedNode(null)
+    await secEdit.setSelectedNode(null)
 
     /*
     // todo: change all this to use nodeupdate events, then get rid of NodeEditor.MainEditor and SecondaryEditor

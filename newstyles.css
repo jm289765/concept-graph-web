@@ -104,7 +104,7 @@ div {
 }
 
 .uilist-container-inner {
-    /* having both margin and padding lets the .viewer-container-category background color show,
+    /* having both margin and padding lets the .uilist-container background color show,
     which makes a bar to the left of the category items */
     margin-left: 4px;
     padding-left: 4px;
@@ -114,11 +114,11 @@ div {
     user-select: none;
 }
 
-#viewers-container {
+#viewers-container, #history-container {
     overflow-y:auto;
 }
 
-.viewer-container {
+.viewer-container, .history-container {
     /* right side has extra margin because scrollbar */
     padding: 20px 12px 20px 8px;
     box-sizing: border-box;
@@ -176,6 +176,15 @@ div {
 .viewer-item-button-editor:hover {
     background-color: lavender;
 }
+
+.history-text-title {
+    position: sticky;
+    width: fit-content;
+    top: 0;
+    padding: 10px 10px 10px 10px;
+    border: 2px solid black;
+}
+
 
 /*
 BELOW THIS IS COPIED FROM OLD STYLES.CSS =============================================
@@ -294,17 +303,4 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
 
 .search-container .search-results-item:active {
     background-color: magenta;
-}
-
-.history-label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 5px 5px 5px;
-}
-
-.history-select {
-    box-sizing: border-box;
-    margin: 0 0 0 5px;
-    width: 100%;
 }
