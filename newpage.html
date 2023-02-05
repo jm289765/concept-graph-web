@@ -11,7 +11,7 @@
 
 <!-- classes for ui elements start with "search", "viewer", "editor", or "history" -->
 
-<div class="col-2 viewer-container">
+<div class="col-2">
     <div class="row-1 heading">
         <div class="search-container" id="search-bar">
             <div class="search-container-input">
@@ -19,25 +19,7 @@
             </div>
         </div>
     </div>
-    <div class="row-6 content">
-        <div class="viewer-container" id="node-viewer">
-            <div class="viewer-container-select">
-                <select class="viewer-select-upper" size="3"></select>
-                <div class="viewer-buttons">
-                    <button class="viewer-button-unlinkupper">Unlink Selected</button>
-                    <button class="viewer-button-addparent">Create New Parent</button>
-                </div>
-            </div>
-            <div class="viewer-text-center">Selected</div>
-            <div class="viewer-container-select">
-                <div class="viewer-buttons">
-                    <button class="viewer-button-unlinklower">Unlink Selected</button>
-                    <button class="viewer-button-addchild">Create New Child</button>
-                </div>
-                <select class="viewer-select-lower" size="3"></select>
-            </div>
-        </div>
-    </div>
+    <div class="row-6 content" id="viewers-container"></div>
     <div class="row-3 bottom">
         <label class="history-label">Previous nodes: <select class="history-select"></select></label>
     </div>

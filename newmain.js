@@ -45,15 +45,17 @@ class NodeList {
         if the nodeList doesn't have the node, it will attempt to retrieve it from the server.
         if the server doesn't have the node, or an invalid id is provided, this will return false.
          */
+
         if (!NodeList.validId(id))
             return false
 
-        if (id in NodeList._nodeList) {
-            return NodeList._nodeList[id]
+        const _id = id.toString()
+        if (_id in NodeList._nodeList) {
+            return NodeList._nodeList[_id]
         } else {
-            await this.update(id)
-            if (NodeList.has(id)) {
-                return NodeList._nodeList[id]
+            await this.update(_id)
+            if (NodeList.has(_id)) {
+                return NodeList._nodeList[_id]
             } else {
                 return false
             }
@@ -106,7 +108,11 @@ class NodeList {
     static async getNeighbors(id) {
         /*
         get predecessors and successors of node 'id'. returns json object with a "nodes" and an "edges" attribute.
-         */
+
+        "nodes" is a list of node JSON objects, so it's not just a list of ids.
+
+        "edges" is a list of pairs of ids: [source, target]
+        */
         if (!NodeList.validId(id)) {
             return false
         }
@@ -251,128 +257,52 @@ class SearchBox {
 }
 
 class NodeViewer {
-    constructor(viewerElem, editor) {
+    /* viewerElem: the HTMLElement that contains this nodeViewer
+
+    editors: list of NodeEditors that this viewer's items can be opened in.
+
+    title: title of this NodeViewer
+     */
+    constructor(viewerElem, editors, title) {
         this.viewerElem = viewerElem
-        this.editor = editor
+        this.editors = editors
 
-        if (viewerElem !== null) {
-            this.upperView = viewerElem.querySelector(".viewer-select-upper")
-            this.centerView = viewerElem.querySelector(".viewer-text-center")
-            this.lowerView = viewerElem.querySelector(".viewer-select-lower")
-            const unlinkUpper = viewerElem.querySelector(".viewer-button-unlinkupper")
-            const unlinkLower = viewerElem.querySelector(".viewer-button-unlinklower")
-            const newParentButton = viewerElem.querySelector(".viewer-button-addparent")
-            const newChildButton = viewerElem.querySelector(".viewer-button-addchild")
+        this.catContainer = new UIList(title, viewerElem, "rebeccapurple")
+        const p = new UIList("Parents", this.catContainer.elem, "lavender")
+        const c = new UIList("Children", this.catContainer.elem, "lavender")
+        this.catContainer.addElem(p.elem)
+        this.catContainer.addElem(c.elem)
 
-            if (!this.editor) {
-                unlinkUpper.setAttribute("disabled", "")
-                unlinkLower.setAttribute("disabled", "")
-                newParentButton.setAttribute("disabled", "")
-                newChildButton.setAttribute("disabled", "")
-            } else {
-                newParentButton.onclick = async () => {
-                    const selId = this.editor.selectedNode
-                    const newId = await NodeList.createNode("concept", "New Node")
-                    await requests.linkNode(newId, selId)
-                    await editor.setSelectedNode(newId)
-                }
-
-                newChildButton.onclick = async () => {
-                    const selId = editor.selectedNode
-                    const newId = await NodeList.createNode("concept", "New Node")
-                    await requests.linkNode(selId, newId)
-                    await editor.setSelectedNode(newId)
-                }
-
-                // todo: some sort of history thing so that you can easily undo accidental unlinks. also confirmation dialog
-                unlinkUpper.onclick = this.unlinkUpper.bind(this)
-                unlinkLower.onclick = this.unlinkLower.bind(this)
-            }
+        this.categories = {
+            "parents": p,
+            "children": c
         }
-    }
-
-    async unlinkUpper() {
-        if (this.upperView.selectedIndex === -1)
-            return
-
-        const upper = this.upperView.options[this.upperView.selectedIndex].value
-        await requests.unlinkNode(upper, this.editor.selectedNode)
-        await this.editor.updateDisplayedNode() // todo: should be update all editors, in case they're all affected
-    }
-
-    async unlinkLower() {
-        if (this.lowerView.selectedIndex === -1)
-            return
-
-        const lower = this.lowerView.options[this.lowerView.selectedIndex].value
-        await requests.unlinkNode(this.editor.selectedNode, lower)
-        await this.editor.updateDisplayedNode()
     }
 
     async updateDisplay(id) {
-        /*
-        updates the node viewer to display the selected node's predecessors and successors.
-         */
-
-        this.upperView.innerHTML = "" // removes all child elements
-        this.lowerView.innerHTML = "" // removes all child elements
-        if (id === "" || id === null) {
-            this.centerView.innerText = "No node selected."
-            return
+        const addItem = (category, node) => {
+            const i = new ViewerItem(node, this.editors)
+            this.categories[category].addElem(i.elem)
         }
-
-        const mainNode = await NodeList.get(id)
-        if (!mainNode) {
-            this.centerView.innerText = "Node does not exist."
-            return
-        }
-
-        this.centerView.innerText = getDisplayName(mainNode)
 
         const neighbors = await NodeList.getNeighbors(id)
 
-        if (!neighbors)
-            return
+        this.clearDisplay()
 
-        function makeElem(nodeJSON) {
-            const elem = document.createElement("option")
-            const elemText = getDisplayName(nodeJSON)
-            elem.innerText = elemText
-            elem.value = nodeJSON.id
-            elem.setAttribute("title", elemText)
-            // todo: add a class based on nodeJSON.type, and add css to color them
-            return elem
-        }
-
-        const elems = {}
+        const nodes = {}
         for (let x of neighbors["nodes"]) {
-            /* neighbors["nodes"] is a list of json objects */
-            elems[x.id] = makeElem(x)
-        }
-
-        const dblClickEvent = (event) => NodeEditor.MainEditor.setSelectedNode(event.target.value)
-        const clickEvent = (event) => {
-            NodeEditor.SecondaryEditor.setSelectedNode(event.target.value)
-        }
-
-        function appendElem(view, id) {
-            const elem = elems[id].cloneNode(true)
-            elem.ondblclick = dblClickEvent
-            // this onclick makes updateDisplayedNode happen twice when a node is clicked, but it's necessary
-            // to keep the 'change' event listener for the <select> elements to catch arrow keys
-            elem.onclick = clickEvent
-            view.appendChild(elem)
+            nodes[x["id"]] = x
         }
 
         let circle = false
         for (let x of neighbors["edges"]) {
-            /* edges is a list of lists of 2 elements: source id, target id */
+            // edges is a list of lists of 2 elements: source id, target id
 
             if (x[0] === x[1]) {
                 if (circle) continue
                 // so that edges to itself won't put two copies in this.lowerView
-                appendElem(this.upperView, x[0])
-                appendElem(this.lowerView, x[0])
+                addItem("parents", nodes[x[0]])
+                addItem("children", nodes[x[0]])
                 circle = true
                 continue
             }
@@ -380,11 +310,17 @@ class NodeViewer {
             // use == in case one id is a string and the other is a number
             if (x[0] == id) {
                 // selected node is source, target is successor
-                appendElem(this.lowerView, x[1])
+                addItem("children", nodes[x[1]])
             } else if (x[1] == id) {
                 // selected node is target, source is predecessor
-                appendElem(this.upperView, x[0])
+                addItem("parents", nodes[x[0]])
             }
+        }
+    }
+
+    clearDisplay() {
+        for (let c of Object.keys(this.categories)) {
+            this.categories[c].clear()
         }
     }
 }
@@ -394,7 +330,7 @@ class NodeEditor {
     static MainEditor = null
     static SecondaryEditor = null
 
-    constructor(editElem, viewerElem = null) {
+    constructor(editElem) {
         /*
         takes an editor html div as input. see div with id "main-edit" for example.
          */
@@ -413,8 +349,6 @@ class NodeEditor {
         this.createButton = editElem.querySelector(".editor-button-create")
         this.linkParentButton = editElem.querySelector(".editor-button-linkparent")
         this.linkChildButton = editElem.querySelector(".editor-button-linkchild")
-
-        this.viewer = new NodeViewer(viewerElem, this)
 
         this.nodeSelectButton.onclick = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onblur = async () => await this.setSelectedNode(this.nodeInput.value)
@@ -656,6 +590,110 @@ class ViewHistory {
     }
 }
 
+class UIList {
+    /* title: string that's displayed as the list's title
+    *
+    * container: the HTMLElement that contains this UIList
+    *
+    * sideColor: color to be shown along the left side of the list items */
+    constructor(title, container, sideColor="lavender") {
+        this.title = title
+        this.elem = document.createElement("div")
+        this.elem.classList.add("uilist-container")
+        this.elem.title = this.title
+        this.elem.style.backgroundColor = sideColor
+        container.appendChild(this.elem)
+
+        const catTitle = document.createElement("div")
+        catTitle.classList.add("uilist-text-title")
+        catTitle.innerHTML = this.title
+        this.elem.appendChild(catTitle)
+
+        this.innerList = document.createElement("div")
+        this.innerList.classList.add("uilist-container-inner")
+        this.elem.appendChild(this.innerList)
+
+        catTitle.addEventListener("click", (evt) => {
+            if (evt.target === catTitle) // so that we don't double toggle
+                this.toggleVisibility()
+        })
+        this.elem.addEventListener("click", (evt) => {
+            if (evt.target === this.elem)
+                this.toggleVisibility()
+        })
+    }
+
+    /* adds an element to this UIList's display
+
+    elem: an HTMLElement or a UIList */
+    addElem(elem) {
+        if (elem instanceof UIList) {
+            this.innerList.appendChild(elem.elem)
+        }
+        else {
+            this.innerList.appendChild(elem)
+        }
+    }
+
+    /* clears the UIList so that it no longer contains or displays any elements. */
+    clear() {
+        this.innerList.innerHTML = ""
+    }
+
+    /* toggles visibility of this list. The list's title remains visible. */
+    toggleVisibility() {
+        if (this.innerList.style.display === "none")
+            this.innerList.style.display = "block"
+        else
+            this.innerList.style.display = "none"
+    }
+}
+
+class ViewerItem {
+    /* data: a node json object
+    *
+    * editors: list of NodeEditors that this ViewerItem should link to */
+    constructor(data, editors) {
+        this.elem = document.createElement("div")
+        this.elem.classList.add("viewer-item")
+        this.elem.dataset["id"] = data["id"]
+        this.elem.dataset["nodetype"] = data["type"]
+
+        this.textElem = document.createElement("div")
+        this.textElem.classList.add("viewer-item-text")
+        let dName = getDisplayName(data)
+        this.textElem.innerHTML = dName
+        this.textElem.title = dName
+        this.elem.appendChild(this.textElem)
+
+        this.buttonContainer = document.createElement("div")
+        this.buttonContainer.classList.add("viewer-item-container-buttons")
+        this.elem.appendChild(this.buttonContainer)
+
+        if (editors) {
+            for (let idx in editors) {
+                // in javascript, array indices are strings. so we do Number(idx)
+                const button = this.makeEditorButton(Number(idx) + 1, editors[idx])
+                this.buttonContainer.appendChild(button)
+            }
+        }
+    }
+
+    makeEditorButton(editorID, editor) {
+        // make button elem, add to a button container
+        const button = document.createElement("div")
+        button.classList.add("viewer-item-button-editor")
+        button.innerText = editorID
+        button.title = `Open in Editor ${editorID}`
+
+        button.addEventListener("click", (evt) => {
+            editor.setSelectedNode(this.elem.dataset["id"])
+        })
+
+        return button
+    }
+}
+
 function getDisplayName(nodeObj) {
     /* nodeObj: an object with attributes for "title" and "id".
 
@@ -667,28 +705,44 @@ function getDisplayName(nodeObj) {
 let viewHistory
 async function init() {
     const mainEditElem = document.getElementById("main-editor")
-    const nodeViewer = document.getElementById("node-viewer")
-    const mainEdit = new NodeEditor(mainEditElem, nodeViewer)
+    const secEditElem = document.getElementById("secondary-editor")
+    const viewerElem = document.getElementById("viewers-container")
+    const searchBar = document.getElementById("search-bar")
+    const historyElem = document.querySelector(".history-select")
 
-    document.querySelector(".history-select").onchange = (event) => {
-        NodeEditor.MainEditor.setSelectedNode(event.target.options[event.target.selectedIndex].value)
-    }
+    const mainEdit = new NodeEditor(mainEditElem)
 
     // viewHistory has to be set up before any node editor gets updated or displays a node
-    const viewerElem = document.querySelector(".history-select")
-    if (viewerElem)
-        viewHistory = new ViewHistory(viewerElem)
+    if (historyElem) {
+        viewHistory = new ViewHistory(historyElem)
+        historyElem.onchange = (event) => {
+            NodeEditor.MainEditor.setSelectedNode(event.target.options[event.target.selectedIndex].value)
+        }
+    }
 
     NodeEditor.MainEditor = mainEdit
-    mainEdit.addEventListener("nodeupdate", (e) => {console.log(`mainEdit node update ${e.detail}`)})
-    await NodeList.update(0) // retrieve root node from server
-    await mainEdit.setSelectedNode(0)
-
-    const secEditElem = document.getElementById("secondary-editor")
     NodeEditor.SecondaryEditor = new NodeEditor(secEditElem)
 
-    const searchBar = document.getElementById("search-bar")
+    if (viewerElem) {
+        const editors = [mainEdit, NodeEditor.SecondaryEditor]
+        for (let idx in editors) {
+            const viewerContainer = document.createElement("div")
+            viewerContainer.classList.add("viewer-container")
+            viewerElem.appendChild(viewerContainer)
+            const title = `Editor ${Number(idx) + 1}`
+
+            const viewer = new NodeViewer(viewerContainer, editors, title)
+            editors[idx].addEventListener("nodeupdate", (e) => {
+                viewer.updateDisplay(e.detail)
+            })
+        }
+    }
+
     const search = new SearchBox(searchBar, mainEdit)
+
+    await NodeList.update(0) // retrieve root node from server
+    await mainEdit.setSelectedNode(0)
+    await NodeEditor.SecondaryEditor.setSelectedNode(null)
 
     /*
     // todo: change all this to use nodeupdate events, then get rid of NodeEditor.MainEditor and SecondaryEditor

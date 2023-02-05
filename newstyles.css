@@ -24,6 +24,7 @@
 .bottom {border-style: none solid solid solid;}
 
 .heading, .content, .bottom {
+    padding: 8px;
     background-color: white;
     border-width: 2px;
 }
@@ -49,10 +50,11 @@ body {
 }
 
 div[class*="col-"] {
-    padding: 8px;
     border: none;
     background-color: lavender;
     height: 100%;
+    padding-left: 4px;
+    padding-right: 4px;
 }
 
 div {
@@ -92,6 +94,87 @@ div {
 .editor-container-tags-type {
     display: flex;
     flex-direction: row;
+}
+
+.uilist-container {
+    /* div with a text elem then indented parts */
+    width: 100%;
+    background-color: blue; /* this value should always be overridden */
+    margin-left: 4px;
+}
+
+.uilist-container-inner {
+    /* having both margin and padding lets the .viewer-container-category background color show,
+    which makes a bar to the left of the category items */
+    margin-left: 4px;
+    padding-left: 4px;
+}
+
+.uilist-text-title {
+    user-select: none;
+}
+
+#viewers-container {
+    overflow-y:auto;
+}
+
+.viewer-container {
+    /* right side has extra margin because scrollbar */
+    padding: 20px 12px 20px 8px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+}
+
+.viewer-item {
+    display: flex;
+    flex-direction: row;
+    padding: 1px 0 1px 0;
+}
+
+.viewer-item:hover {
+    background-color: lavender;
+}
+
+.viewer-item:hover .viewer-item-container-buttons {
+    background-color: darkmagenta;
+}
+
+.viewer-item-text {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    font-size: 0.8em;
+    flex-grow: 1;
+    margin-right: 8px;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.viewer-item-container-buttons {
+    background-color: rebeccapurple;
+    flex-shrink: 0;
+    flex-grow: 0;
+    height: 20px;
+    width: auto;
+    padding: 3px 0 3px 6px;
+    font-size: 0;
+}
+
+.viewer-item-button-editor {
+    display: inline-block;
+    height: 14px;
+    width: 14px;
+    font-size: 10px;
+    margin: 0 6px 0 0;
+    padding-top: 2px;
+    text-align: center;
+    user-select: none;
+}
+
+.viewer-item-button-editor:hover {
+    background-color: lavender;
 }
 
 /*
@@ -211,102 +294,6 @@ BELOW THIS IS COPIED FROM OLD STYLES.CSS =======================================
 
 .search-container .search-results-item:active {
     background-color: magenta;
-}
-
-.viewer-container {
-    height: 100%;
-    padding: 20px 40px 20px 30px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    background-color: white;
-}
-
-.viewer-container option {
-    border-style: solid solid none solid;
-    border-width: 1px;
-    border-color: #f0d0f0;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-.viewer-container option:checked {
-    background-color: lavender;
-}
-
-.viewer-container option:hover {
-    background-color: darkmagenta;
-    color: white
-}
-
-.viewer-container option[selected] {
-    /* doesn't work. unfortunately, i can't figure out how to set the
-    currently selected option's highlight color to not be the default blue.
-    option[selected] doesn't work.
-    *::selection and *::-moz-selection apply to other highlights, but not options.
-    option:focus doesn't work.
-     */
-    background-color: pink;
-}
-
-.viewer-container option:focus {
-    background-color: magenta;
-}
-
-.viewer-container select {
-    padding: 10px 8px 10px 8px;
-    margin: 10px 0 10px 0;
-    border: 2px solid darkmagenta;
-    flex-grow: 1;
-}
-
-.viewer-buttons {
-    display: flex;
-    flex-direction: row;
-}
-
-.viewer-buttons button {
-    flex-grow: 1;
-    flex-basis: 0;
-    margin: auto 10px auto 10px;
-    border: 2px solid darkmagenta;
-    background-color: white;
-    width: auto;
-}
-
-.viewer-container-select {
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    background-color: lavender;
-    border: 3px solid darkmagenta;
-    padding: 10px 8px 10px 8px;
-    width: 100%;
-    flex-grow: 1;
-    min-height: 75px;
-}
-
-.viewer-container-select button:hover {
-    background-color: darkmagenta;
-    color: white;
-}
-
-.viewer-container-select button:active {
-    background-color: darkorchid;
-    color: white;
-}
-
-.viewer-text-center {
-    margin: 10px;
-    height: auto;
-    border: 3px solid darkmagenta;
-    background-color: darkmagenta;
-    color: white;
-    text-align: center;
-    padding: 5px 10px 5px 10px;
-    word-wrap: break-word;
-    min-height: 19px;
 }
 
 .history-label {
