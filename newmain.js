@@ -140,36 +140,35 @@ class NodeList {
 }
 
 class SearchBox {
-    constructor(searchElem, parent) {
-        /* searchElem is the search box's <label> element. it should have a child with the
-        * "search-input-wrapper" class and an <input> child with the "node-search-input" class.
+    constructor(searchElem, editors) {
+        /* searchElem is the search box's container element. it should have a child with the
+        * "search-container-input" class and an <input> child with the "search-input" class.
         *
-        * parent should be a NodeEditor object. */
-        if (searchElem === undefined || searchElem === null) {
-            // element does not exist
-            return
-        }
+        * editors: list of NodeEditors that search results can be opened in */
 
+        this.editors = editors
+        this.container = searchElem
         this.inputContainer = searchElem.querySelector(".search-container-input")
         this.inputBox = searchElem.querySelector(".search-input")
-        if (!this.inputContainer || !this.inputBox)
-            return
 
-        this.maxResultsAmount = 10
         this.searchResultsElem = document.createElement("div")
-        this.searchResults = {}
+        this.searchResultsElem.classList.add("search-container-results")
+        this.inputContainer.appendChild(this.searchResultsElem)
+
+        this.searchResultsList = new UIList("", this.searchResultsElem, "rebeccapurple")
 
         this.inputBox.oninput = () => this.updateHandler()
         this.inputBox.onfocus = () => this.showSearchResults()
-        this.searchResultsElem.classList.add("search-results-list")
         this.hideSearchResults()
-        this.inputContainer.appendChild(this.searchResultsElem)
 
-        if (parent !== undefined && parent !== null) {
-            this.nodeEditor = parent
-        }
+        // hide search results after opening one in an editor
+        this.searchResultsElem.addEventListener("click", (evt) => {
+            if (evt.target.classList.contains("viewer-item-button-editor")) {
+                this.hideSearchResults()
+            }
+        })
 
-        // hide search results when clicking outside it
+        // hide search results when clicking outside results list
         document.addEventListener('click', (event) => {
             // this event doesn't fire when a disabled element is clicked. so it doesn't
             // always work when you have the root node loaded in a node editor.
@@ -188,48 +187,27 @@ class SearchBox {
         })
     }
 
-    async selectSearchItem(event) {
-        this.nodeEditor.setSelectedNode(event.target.dataset["id"])
-        this.hideSearchResults()
-    }
-
-    appendSearchResultItem(id, text) {
-        if (id in this.searchResults) {
-            this.searchResults[id].innerText = text
-            return
-        }
-
-        if (Object.keys(this.searchResults).length >= this.maxResultsAmount) {
-            return
-        }
-
-        const newItem = document.createElement("div")
-        newItem.classList.add("search-results-item")
-        newItem.innerText = text
-        newItem.setAttribute("title", text)
-        newItem.dataset["id"] = id
-
-        newItem.onclick = (event) => this.selectSearchItem(event)
-        this.searchResults[id] = newItem
-        this.searchResultsElem.appendChild(newItem)
+    appendSearchResultItem(data) {
+        /* data: a node data object from NodeList */
+        const newItem = new ViewerItem(data, this.editors)
+        this.searchResultsList.addElem(newItem)
     }
 
     async updateSearchResults() {
         const res = await requests.search(this.inputBox.value)
         // res is list of dicts of {id: x, title: y}
 
-        // remove previous results
-        this.searchResultsElem.innerHTML = ""
-        this.searchResults = []
+        this.searchResultsList.clear()
 
         for (let x of res) {
-            this.appendSearchResultItem(x.id, getDisplayName(x))
+            this.appendSearchResultItem(x)
         }
 
         this.showSearchResults()
     }
 
     updateHandler() {
+        // aka debouncer
         const val = this.inputBox.value
         const p = async () => {
             if (val === this.inputBox.value) {
@@ -601,7 +579,7 @@ class UIList {
     * container: the HTMLElement that contains this UIList
     *
     * sideColor: color to be shown along the left side of the list items */
-    constructor(title, container, sideColor="lavender") {
+    constructor(title, container, sideColor="rebeccapurple") {
         this.title = title
         this.elem = document.createElement("div")
         this.elem.classList.add("uilist-container")
@@ -725,7 +703,7 @@ let viewHistory
 async function init() {
     const mainEditElem = document.getElementById("editor-1")
     const secEditElem = document.getElementById("editor-2")
-    const searchBar = document.getElementById("search-bar")
+    const searchElem = document.getElementById("search-container")
     const viewerElem = document.getElementById("viewers-container")
     const historyElem = document.getElementById("history-container")
 
@@ -755,7 +733,9 @@ async function init() {
         }
     }
 
-    const search = new SearchBox(searchBar, mainEdit)
+    if (searchElem) {
+        const search = new SearchBox(searchElem, editors)
+    }
 
     await NodeList.update(0) // retrieve root node from server
     await mainEdit.setSelectedNode(0)
