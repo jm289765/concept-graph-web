@@ -31,14 +31,14 @@ class HttpRequests {
         }
     }
 
-    static async addNode(type, title, content="", tags="", parent=0) {
+    static async addNode(type="concept", title="New Node", content="", tags="", parent=0) {
         /*
         type: "concept", "explanation", "comment", etc
         title: title to be given to new node
         content: content to be given to new node
         parent: parent new node should start with
 
-        return: id of new node
+        return: JSON object of new node
          */
         const params = {type: type, title: title, content: content, tags: tags, parent: parent}
         return this.makeRequest("add", params, "POST")

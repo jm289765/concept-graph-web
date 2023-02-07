@@ -123,13 +123,13 @@ class NodeList {
         return n
     }
 
-    static async createNode(type, title, content="", tags="", parent=0) {
+    static async createNode(type="concept", title="New Node", content="", tags="") {
         /*
         creates a new node and sends an addNode request to the server.
 
         returns the id of the new node.
          */
-        const newNodeJSON = await requests.addNode(type, title, content, tags, parent)
+        const newNodeJSON = await requests.addNode(type, title, content, tags)
         return NodeList.nodesFromJSON(newNodeJSON)[0]
     }
 
@@ -259,7 +259,7 @@ class NodeViewer {
             "children": c
         }
 
-        this.displayedID = null
+        this.displayedNode = null
 
         editor.addEventListener("nodeupdate", (e) => {
             this.updateDisplay(e.detail)
@@ -276,16 +276,17 @@ class NodeViewer {
         this.catContainer.titleElem.innerText = value
     }
 
-    get displayedID() {
-        return this._displayedID
+    get displayedNode() {
+        return this._displayedNode
     }
 
-    set displayedID(value) {
-        this._displayedID = value
-        if (value === null)
+    set displayedNode(node) {
+        /* node: a node data object or null/undefined */
+        this._displayedNode = node
+        if (!node)
             this.title = `Editor ${this.editor.id}`
         else
-            this.title = `Editor ${this.editor.id} [#${value}]`
+            this.title = `Editor ${this.editor.id} (${getDisplayName(node)})`
     }
 
     async updateDisplay(id) {
@@ -349,14 +350,14 @@ class NodeViewer {
             }
         }
 
-        this.displayedID = id
+        this.displayedNode = nodes[id]
     }
 
     clearDisplay() {
         for (let c of Object.keys(this.categories)) {
             this.categories[c].clear()
         }
-        this.displayedID = null
+        this.displayedNode = null
     }
 }
 
@@ -402,14 +403,15 @@ class NodeEditor {
 
         if (this.newParentButton)
             this.newParentButton.onclick = async () => {
-                const newId = await requests.addNode()
+                const newId = await NodeList.createNode()
                 await requests.linkNode(newId, this.selectedNode)
                 await this.setSelectedNode(newId)
             }
 
         if (this.newChildButton)
             this.newChildButton.onclick = async () => {
-                const newId = await requests.addNode(parent=this.selectedNode)
+                const newId = await NodeList.createNode()
+                await requests.linkNode(this.selectedNode, newId)
                 await this.setSelectedNode(newId)
             }
     }
@@ -555,7 +557,7 @@ class NodeEditor {
 
             let u = false
             if (this.titleInput.value !== node["title"]) {
-                    await NodeList.updateNode(nodeId, "title", realTitle)
+                    await NodeList.updateNode(nodeId, "title", this.titleInput.value)
             }
 
             if (this.contentInput.value !== node["content"]) {
@@ -568,7 +570,7 @@ class NodeEditor {
                 await NodeList.updateNode(nodeId, "tags", this.tagsInput.value)
             }
 
-            const type = this.typeSelect.options[this.typeSelect.selectedIndex].value
+            const type = this.typeSelect.options[this.typeSelect.selectedIndex]?.value
             if (type !== node["type"]) {
                 u = true
                 await NodeList.updateNode(nodeId, "type", type)
@@ -826,7 +828,7 @@ async function init() {
                 if (idx2 !== idx) {
                     editors[idx2].addEventListener("nodeupdate", (e) =>{
                         // in case the nodeupdate changes a parent or child title or link status
-                        viewer.updateDisplay(viewer.displayedID)
+                        viewer.updateDisplay(viewer.displayedNode?.id)
                     })
                 }
             }

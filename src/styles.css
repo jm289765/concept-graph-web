@@ -167,6 +167,7 @@ body {
     font-family: sans-serif;
     flex-grow: 1;
     border: 2px inset lavender;
+    font-size: 1em;
 }
 
 /* editor id input and buttons */
