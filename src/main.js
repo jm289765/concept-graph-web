@@ -438,7 +438,11 @@ class NodeEditor {
         this._selectedNode = null
         this._id = id
         this.editElem = editElem
+        this._uniqueElem = document.createElement("div") // used for firing events
         this.targetEditor = null
+
+        if (!this.editElem)
+            return
 
         this.titleInput = editElem.querySelector(".editor-input-title")
         this.tagsInput = editElem.querySelector(".editor-input-tags")
@@ -499,19 +503,19 @@ class NodeEditor {
     addEventListener(type, callback, options) {
         /* NodeEditor objects have a "nodeupdate" event that fires whenever the selected node
         * is changed. for nodeupdate handlers, event.detail gives you the new id. */
-        this.editElem.addEventListener(type, callback, options)
+        this._uniqueElem.addEventListener(type, callback, options)
     }
 
     removeEventListener(type, callback, options) {
-        this.editElem.removeEventListener(type, callback, options)
+        this._uniqueElem.removeEventListener(type, callback, options)
     }
 
     nodeUpdate() {
         /*
         fires the nodeupdate event. Should happen whenever any of the selected node's values are changed.
          */
-        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
-        this.editElem.dispatchEvent(ev)
+        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false});
+        this._uniqueElem.dispatchEvent(ev)
     }
 
     get selectedNode() {
@@ -527,13 +531,16 @@ class NodeEditor {
         if (id == this.selectedNode) // id can be either int or str, so use == instead of ===
             return
 
-        // in case there are unsaved changes. updateAfter=false bc we'll update in a moment.
-        await this.saveButtonFunc(false)
+        if (this.editElem) {
+            // in case there are unsaved changes. updateAfter=false bc we'll update in a moment.
+            await this.saveButtonFunc(false)
 
-        this._selectedNode = id
-        const x = await this.updateDisplayedNode()
-        if (!x)
-            this._selectedNode = null
+            this._selectedNode = id
+            const x = await this.updateDisplayedNode()
+            if (!x)
+                this._selectedNode = null
+        } else
+            this._selectedNode = id
 
         this.nodeUpdate()
     }
@@ -571,6 +578,9 @@ class NodeEditor {
 
         returns true if the display is updated, false if it isn't.
          */
+
+        if (!this.editElem)
+            return true
 
         const id = this.selectedNode
 
@@ -630,6 +640,9 @@ class NodeEditor {
         tell the server to set the selected node's attributes to the values in
         the editor boxes. if the values are already accurate, no change.
          */
+        if (!this.editElem)
+            return
+
         try {
             const nodeId = this.selectedNode
 
@@ -914,10 +927,12 @@ async function init() {
 
     const mainEdit = new NodeEditor(mainEditElem, 1)
     const secEdit = new NodeEditor(secEditElem, 2)
+    const thirdEdit = new NodeEditor(null, 3)
     mainEdit.setTarget(secEdit)
     secEdit.setTarget(mainEdit)
 
-    const editors = [mainEdit, secEdit]
+    const uiEditors = [mainEdit, secEdit] // these have a ui for user to interact with
+    const editors = [mainEdit, secEdit, thirdEdit]
 
     // viewHistory has to be set up before any node editor gets updated or displays a node
     if (historyElem) {
@@ -930,7 +945,7 @@ async function init() {
             viewerContainer.classList.add("viewer-container")
             viewerElem.appendChild(viewerContainer)
 
-            const viewer = new NodeViewer(viewerContainer, editors[idx], editors)
+            const viewer = new NodeViewer(viewerContainer, editors[idx], uiEditors)
 
             for (let idx2 in editors) {
                 if (idx2 !== idx) {
@@ -947,8 +962,9 @@ async function init() {
         new SearchBox(searchElem, editors)
     }
 
-    await mainEdit.setSelectedNode(0)
-    await secEdit.setSelectedNode(null)
+    mainEdit.setSelectedNode(null)
+    secEdit.setSelectedNode(null)
+    thirdEdit.setSelectedNode(0)
 }
 
 init()
