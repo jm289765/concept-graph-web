@@ -343,3 +343,48 @@ body {
     padding: 10px 10px 10px 10px;
     border: 2px solid black;
 }
+
+/* modal (used for confirmation dialog) */
+
+.modal-container-background {
+    z-index: 1000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-container-background * {
+    z-index: inherit;
+}
+
+.modal-container-content {
+    background-color: white;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    padding: 25px;
+    margin: auto;
+}
+
+.modal-text {
+    margin-bottom: 30px;
+    width: 100%;
+    text-align: center;
+}
+
+.modal-container-buttons {
+    float: right;
+    display: flex;
+    flex-direction: row;
+    justify-content: right;
+}
+
+.modal-button {
+    margin: 0 10px 0 10px;
+}

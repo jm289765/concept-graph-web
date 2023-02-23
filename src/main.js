@@ -139,6 +139,83 @@ class NodeList {
     }
 }
 
+class ConfirmationDialog {
+    constructor(text) {
+        /*
+        makes a confirmation dialog. does not display it. to use it, do this.exec(callback)
+         */
+        this.background = document.createElement("div")
+        this.background.classList.add("modal-container-background")
+        document.body.appendChild(this.background)
+
+        this.container = document.createElement("div")
+        this.container.classList.add("modal-container-content")
+        this.background.appendChild(this.container)
+
+        this.text = document.createElement("div")
+        this.text.classList.add("modal-text")
+        this.text.innerText = text
+        this.container.appendChild(this.text)
+
+        this.buttons = document.createElement("div")
+        this.buttons.classList.add("modal-container-buttons")
+        this.container.appendChild(this.buttons)
+
+        this.yes = document.createElement("button")
+        this.yes.classList.add("modal-button")
+        this.yes.innerText = "Yes"
+        this.buttons.appendChild(this.yes)
+
+        this.no = document.createElement("button")
+        this.no.classList.add("modal-button")
+        this.no.innerText = "No"
+        this.buttons.appendChild(this.no)
+
+        this.background.style.display = "none";
+    }
+
+    async exec() {
+        /*
+        displays the confirmation dialog. returns a promise that resolves true if the user clicks "Yes" and
+        resolves false if "No" is clicked. Deletes the confirmation dialog HTMLElement after resolving.
+         */
+        this.background.style.display = "flex";
+        this.yes.focus()
+        return new Promise((resolve, reject) => {
+            const _resolve = (val) => {
+                this.delete() // this removes yes, no, and background event listeners
+                resolve(val)
+            }
+            this.yes.onclick = () => {
+                _resolve(true);
+            }
+
+            this.no.onclick = () => {
+                _resolve(false);
+            }
+
+            this.background.onclick = (evt) => {
+                if (evt.target === this.background) {
+                    _resolve(false);
+                }
+            }
+
+            const docListener = (evt) => {
+                if (evt.key === "Escape") {
+                    document.removeEventListener("keydown", docListener)
+                    _resolve(false)
+                }
+            }
+
+            document.addEventListener("keydown", docListener)
+        })
+    }
+
+    delete() {
+        this.background.remove()
+    }
+}
+
 class SearchBox {
     constructor(searchElem, editors) {
         /* searchElem is the search box's container element. it should have a child with the
@@ -277,8 +354,13 @@ class NodeViewer {
 
     async updateDisplay(id) {
         const unlinkFunc = (parent, child) => (evt) => {
-            this.editor.unlink(parent, child)
-            this.updateDisplay(id)
+            const conf = new ConfirmationDialog(`Are you sure you want to remove #${child} from #${parent}?`)
+            conf.exec().then((result) => {
+                if (result) {
+                    this.editor.unlink(parent, child)
+                    this.updateDisplay(id)
+                }
+            })
         }
 
         const addItem = (category, node, unlinker) => {
