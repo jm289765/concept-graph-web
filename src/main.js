@@ -123,7 +123,7 @@ class NodeList {
         return n
     }
 
-    static async createNode(type="concept", title="New Node", content="", tags="") {
+    static async createNode(type="concept", title="New Node", content="", tags="incomplete") {
         /*
         creates a new node and sends an addNode request to the server.
 
@@ -157,8 +157,8 @@ class SearchBox {
 
         this.searchResultsList = new UIList("", this.searchResultsElem, "rebeccapurple")
 
-        this.inputBox.oninput = () => this.updateHandler()
-        this.inputBox.onfocus = () => this.showSearchResults()
+        this.inputBox.oninput = endDebouncer(() => this.updateSearchResults(), 300)
+        this.inputBox.onfocus = () => { this.inputBox.select(); sthis.showSearchResults(); }
         this.hideSearchResults()
 
         // hide search results after opening one in an editor
@@ -204,20 +204,6 @@ class SearchBox {
         }
 
         this.showSearchResults()
-    }
-
-    updateHandler() {
-        // aka debouncer
-        const val = this.inputBox.value
-        const p = async () => {
-            if (val === this.inputBox.value) {
-                // value has not changed
-                await this.updateSearchResults()
-            }
-        }
-        // only update search results if value has not changed for 0.5 seconds
-        // this reduces the amount of requests made by a lot
-        setTimeout(p.bind(this), 500)
     }
 
     searchResultsVisible() {
@@ -286,7 +272,7 @@ class NodeViewer {
         if (!node)
             this.title = `Editor ${this.editor.id}`
         else
-            this.title = `Editor ${this.editor.id} (${getDisplayName(node)})`
+            this.title = `Editor ${this.editor.id}: ${getDisplayName(node)}`
     }
 
     async updateDisplay(id) {
@@ -314,7 +300,7 @@ class NodeViewer {
         const neighbors = await NodeList.getNeighbors(id)
         if (!neighbors) return
 
-        this.clearDisplay() // do this after getting neighbors so that the user doesn't see the cleared display
+        this.clearDisplay() // do this after awaiting neighbors so user doesn't see the cleared display
 
         const nodes = {}
         for (let x of neighbors["nodes"]) {
@@ -390,6 +376,13 @@ class NodeEditor {
         this.saveButton = editElem.querySelector(".editor-button-save")
         this.createButton = editElem.querySelector(".editor-button-create")
 
+        // could use onchange for all of these. then the event would only be called when the
+        // thing loses focus.
+        this.titleInput.oninput = this.inputHandler()
+        this.tagsInput.oninput = this.inputHandler()
+        this.typeSelect.onchange = () => this.saveButtonFunc()
+        this.contentInput.oninput = this.inputHandler()
+
         this.nodeSelectButton.onclick = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onblur = async () => await this.setSelectedNode(this.nodeInput.value)
         this.nodeInput.onkeydown = async (event) => {
@@ -406,6 +399,7 @@ class NodeEditor {
                 const newId = await NodeList.createNode()
                 await requests.linkNode(newId, this.selectedNode)
                 await this.setSelectedNode(newId)
+                this.titleInput.focus()
             }
 
         if (this.newChildButton)
@@ -413,6 +407,7 @@ class NodeEditor {
                 const newId = await NodeList.createNode()
                 await requests.linkNode(this.selectedNode, newId)
                 await this.setSelectedNode(newId)
+                this.titleInput.focus()
             }
     }
 
@@ -427,6 +422,14 @@ class NodeEditor {
 
     removeEventListener(type, callback, options) {
         this.editElem.removeEventListener(type, callback, options)
+    }
+
+    nodeUpdate() {
+        /*
+        fires the nodeupdate event. Should happen whenever any of the selected node's values are changed.
+         */
+        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
+        this.editElem.dispatchEvent(ev)
     }
 
     get selectedNode() {
@@ -450,8 +453,7 @@ class NodeEditor {
         if (!x)
             this._selectedNode = null
 
-        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
-        this.editElem.dispatchEvent(ev)
+        this.nodeUpdate()
     }
 
     setTarget(target) {
@@ -505,7 +507,6 @@ class NodeEditor {
             this.nodeInput.value = id
 
             if (this.nodeInput.value === "0") { // can't edit root node
-                // todo: disable parent and child link and create buttons
                 this.titleInput.setAttribute("disabled", "")
                 this.titleInput.setAttribute("title", "")
                 this.tagsInput.setAttribute("disabled", "")
@@ -547,7 +548,6 @@ class NodeEditor {
         tell the server to set the selected node's attributes to the values in
         the editor boxes. if the values are already accurate, no change.
          */
-        // todo: check that this.selectedNode is the same as this.nodeInput.value
         try {
             const nodeId = this.selectedNode
 
@@ -557,7 +557,8 @@ class NodeEditor {
 
             let u = false
             if (this.titleInput.value !== node["title"]) {
-                    await NodeList.updateNode(nodeId, "title", this.titleInput.value)
+                u = true
+                await NodeList.updateNode(nodeId, "title", this.titleInput.value)
             }
 
             if (this.contentInput.value !== node["content"]) {
@@ -578,6 +579,8 @@ class NodeEditor {
 
             if (u) {
                 await NodeList.update(nodeId)
+                console.log("save button calling node update")
+                this.nodeUpdate()
 
                 // todo: if both editors have the same node, make sure they both update
                 //  e.g. if both have node 7 selected, and you update content in one, the other
@@ -588,26 +591,30 @@ class NodeEditor {
         }
     }
 
-    async createButtonFunc(title=null, content=null) {
+    async createButtonFunc() {
         /*
         creates a new node using the title and content from their respective input boxes. then displays the new node.
 
         returns the new node's id
          */
         try {
-            let type = this.typeSelect.options[this.typeSelect.selectedIndex].value
-            if (type === "root") {
-                type = "concept"
-            }
-            const ti = title || this.titleInput.value
-            const co = content || this.contentInput.value
-            const tags = this.tagsInput.value
-            const newNodeId = await NodeList.createNode(type, ti, co, tags, this.selectedNode || 0)
+            const newNodeId = await NodeList.createNode()
             await this.setSelectedNode(newNodeId)
+            this.titleInput.focus()
             return newNodeId
         } catch (e) {
             console.log(e)
         }
+    }
+
+    inputHandler() {
+        /*
+        event handler for text field .oninput event. saves the node after the user stops typing.
+
+        inputField: HTMLElement where inputField.value is the text that the user inputs
+        return: function that saves the node if value hasn't changed after some time
+         */
+        return endDebouncer(() => this.saveButtonFunc(), 1000)
     }
 
     async link(parent, child) {
@@ -618,8 +625,7 @@ class NodeEditor {
 
         await requests.linkNode(parent, child)
 
-        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
-        this.editElem.dispatchEvent(ev)
+        this.nodeUpdate()
     }
 
     async unlink(parent, child) {
@@ -630,8 +636,7 @@ class NodeEditor {
 
         await requests.unlinkNode(parent, child)
 
-        const ev = new CustomEvent("nodeupdate", {detail: this.selectedNode, bubbles: false})
-        this.editElem.dispatchEvent(ev)
+        this.nodeUpdate()
     }
 }
 
@@ -794,6 +799,27 @@ function getDisplayName(nodeObj) {
     return: formatted display name for the given node, e.g. "[#0] root"
      */
     return `[#${nodeObj["id"]}] ${nodeObj["title"]}`
+}
+
+function endDebouncer(func, waitMS) {
+    /*
+    calls the function one time, after it hasn't been called for a duration of waitMS.
+
+    waitMS: how long to wait for more input
+     */
+    let last = 0 // last time this was called
+
+    return function() {
+        const now = Date.now()
+        last = now
+        function future() {
+            if (last === now) { // if innerDebounce was not called since the "last = now" line
+                func()
+            }
+        }
+
+        setTimeout(future.bind(this), waitMS)
+    }
 }
 
 let viewHistory
