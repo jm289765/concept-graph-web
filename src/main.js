@@ -235,7 +235,7 @@ class SearchBox {
         this.searchResultsList = new UIList("", this.searchResultsElem, "rebeccapurple")
 
         this.inputBox.oninput = endDebouncer(() => this.updateSearchResults(), 300)
-        this.inputBox.onfocus = () => { this.inputBox.select(); sthis.showSearchResults(); }
+        this.inputBox.onfocus = () => { this.inputBox.select(); this.showSearchResults(); }
         this.hideSearchResults()
 
         // hide search results after opening one in an editor
@@ -674,7 +674,6 @@ class NodeEditor {
 
             if (u) {
                 await NodeList.update(nodeId)
-                console.log("save button calling node update")
                 this.nodeUpdate()
 
                 // todo: if both editors have the same node, make sure they both update
